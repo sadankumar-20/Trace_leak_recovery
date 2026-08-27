@@ -174,6 +174,9 @@ def generate(seed: int = 42, out_dir: str | Path = "data",
             outcome = "needs_information"
         elif lt == "partial_capture_mismatch":
             part = round(o.amount_paise * 0.6)
+            # the capture IS the partial event — reflect it in the record
+            world["captures"][-1] = Capture(cap.id, o.id, part,
+                                            cap.created_at, "captured")
             tx = GatewayTxn(tx.id, cap.id, o.id, tx.gateway, part,
                             round(part * fs.mdr_pct / 100),
                             round(part * fs.mdr_pct / 100 * fs.gst_pct / 100),
