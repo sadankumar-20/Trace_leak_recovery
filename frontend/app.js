@@ -68,10 +68,28 @@ async function story() {
       <b class="num">${rupee(k.estimated_preventable_paise)}</b></span>
       in future leakage — labeled ESTIMATED, never added to actual
       recovery.`]];
-  $("#story").innerHTML = BEATS.map(([kick, text]) => `
+  $("#story").innerHTML = BEATS.map(([kick, text], i) => `
     <div class="beat"><div class="card-story">
-      <div class="kick">${kick}</div><p>${wordize(text)}</p>
+      <span class="chapter">${String(i + 1).padStart(2, "0")}</span>
+      <span class="kick">${kick}</span><p>${wordize(text)}</p>
+      <div class="rulebar"></div>
     </div></div>`).join("");
+  $("#rail").innerHTML = BEATS.map(() => "<i></i>").join("");
+  const dots = [...document.querySelectorAll("#rail i")];
+  new IntersectionObserver((es) => es.forEach((e) => {
+    const idx = [...document.querySelectorAll(".beat")]
+      .indexOf(e.target);
+    if (e.isIntersecting) dots.forEach((d, j) =>
+      d.classList.toggle("on", j === idx));
+  }), { threshold: 0.6 }).observe
+    ? [...document.querySelectorAll(".beat")].forEach((b) =>
+      new IntersectionObserver((es) => es.forEach((e) => {
+        if (e.isIntersecting) {
+          const idx = [...document.querySelectorAll(".beat")]
+            .indexOf(e.target);
+          dots.forEach((d, j) => d.classList.toggle("on", j === idx));
+        }
+      }), { threshold: 0.6 }).observe(b)) : null;
   document.querySelectorAll(".beat").forEach((b, i) => {
     b.querySelectorAll(".w").forEach((w, j) =>
       w.style.transitionDelay = REDUCED ? "0s" : `${j * 28}ms`);
@@ -106,20 +124,43 @@ async function kpis() {
   observe(tiles, "on");
 }
 
-/* ---------- reconciliation table ---------- */
+/* ---------- case-card grid (replaces the old table) ---------- */
+let ALL_CASES = [], FILTER = "all", QUERY = "";
 async function reconTable() {
-  const { exceptions } = await api("/exceptions");
-  $("#recon tbody").innerHTML = exceptions.map((e) => `
-    <tr class="row" data-id="${e.exception_id}">
-      <td>${e.order.id}</td>
-      <td>${e.gateway.gw} ${e.gateway.id}<br>${rupee(e.gateway.amount_paise)}</td>
-      <td>${rupee(e.bank.expected_paise)} \u2192 ${rupee(e.bank.actual_paise)}</td>
-      <td class="delta">${rupee(e.delta_paise)}</td>
-      <td><span class="chip EXCEPTION">${e.type}</span></td>
-      <td><span class="chip warn">${e.decision}</span></td>
-      <td><span class="chip ok">${e.state}</span></td></tr>`).join("");
-  document.querySelectorAll("tr.row").forEach((tr) =>
-    tr.addEventListener("click", () => detail(tr.dataset.id)));
+  ALL_CASES = (await api("/exceptions")).exceptions;
+  const types = [...new Set(ALL_CASES.map((e) => e.type))].sort();
+  $("#filters").innerHTML = ["all", ...types].map((tp) =>
+    `<button data-f="${tp}" class="${tp === FILTER ? "on" : ""}">
+     ${tp}</button>`).join("");
+  document.querySelectorAll("#filters button").forEach((b) =>
+    b.addEventListener("click", () => { FILTER = b.dataset.f;
+      reconTable(); }));
+  $("#search").oninput = (ev) => { QUERY = ev.target.value.toLowerCase();
+    drawCards(); };
+  drawCards();
+}
+function drawCards() {
+  const rows = ALL_CASES.filter((e) =>
+    (FILTER === "all" || e.type === FILTER)
+    && (!QUERY || `${e.order.id} ${e.exception_id} ${e.type}
+        ${e.decision}`.toLowerCase().includes(QUERY)));
+  $("#cards").innerHTML = rows.map((e) => `
+    <div class="case" data-id="${e.exception_id}">
+      <div class="head"><span class="oid">${e.order.id}</span>
+        <span class="delta">\u2212${rupee(Math.abs(e.delta_paise))}</span>
+      </div>
+      <div class="ledger3">
+        <div><b>ORDER</b>${e.order.id}</div>
+        <div><b>${e.gateway.gw}</b>${rupee(e.gateway.amount_paise)}</div>
+        <div class="short"><b>BANK</b>${rupee(e.bank.expected_paise)}
+          \u2192 ${rupee(e.bank.actual_paise)}</div>
+      </div>
+      <div class="foot"><span class="chip type">${e.type}</span>
+        <span class="chip warn">${e.decision}</span>
+        <span class="chip ok">${e.state}</span></div>
+    </div>`).join("") || "<p class='mono'>no cases match</p>";
+  document.querySelectorAll(".case").forEach((c) =>
+    c.addEventListener("click", () => detail(c.dataset.id)));
 }
 
 /* ---------- detail: interactive graph, animated gates, timeline ------- */
@@ -131,11 +172,24 @@ async function detail(id) {
     `<div class="gate" style="transition-delay:${REDUCED ? 0 : i * 90}ms">
       <span>${k}</span><span class="g-${v}">${v}</span></div>`).join("")
     : "<em>no gate run (verdict not supported)</em>";
-  $("#detail").hidden = false;
-  $("#detail").innerHTML = `
-   <h2>${id} \u00b7 ${d.discrepancy.discrepancy_type} \u00b7
+  const STEPS = ["EXCEPTION", "INVESTIGATE", "PROVE", "GATES",
+                 "DECIDE", "EXECUTE", "RECOVER", "AUDIT"];
+  const hit = new Set(["EXCEPTION", "INVESTIGATE", "PROVE", "GATES",
+                       "DECIDE"]);
+  if (d.execution) { hit.add("EXECUTE"); hit.add("AUDIT"); }
+  if (d.recovery) hit.add("RECOVER");
+  const ov = $("#overlay");
+  ov.hidden = false;
+  document.body.style.overflow = "hidden";
+  ov.innerHTML = `<div class="file">
+   <div class="rail2">${STEPS.map((s) =>
+     `<div class="step ${hit.has(s) ? "hit" : ""}">${s}</div>`).join("")}
+   </div><div class="body">
+   <button class="close" id="closeov">CLOSE \u2715</button>
+   <h2>${id}</h2>
+   <p class="sub">${d.discrepancy.discrepancy_type} \u00b7
        \u0394 ${rupee(Math.abs(d.discrepancy.delta_paise))} \u00b7
-       deadline ${d.discrepancy.claim_deadline}</h2>
+       deadline ${d.discrepancy.claim_deadline}</p>
    <div class="cols">
     <div class="card"><h3>EVIDENCE GRAPH (${Object.keys(g.nodes).length}
       hash-verified nodes \u2014 click a node to trace its edges)</h3>
@@ -182,9 +236,14 @@ async function detail(id) {
        title="${i.reason.replace(/"/g, "'")}">${a}</button>`).join("")}
    </div>
    <p class="mono">disabled actions show the machine reason on hover \u2014
-     enforcement is server-side, the UI only reflects it</p>`;
+     enforcement is server-side, the UI only reflects it</p>
+   </div></div>`;
+  $("#closeov").addEventListener("click", () => {
+    ov.hidden = true; document.body.style.overflow = ""; });
+  ov.addEventListener("click", (e) => { if (e.target === ov) {
+    ov.hidden = true; document.body.style.overflow = ""; } });
   requestAnimationFrame(() =>
-    $("#detail .gates").classList.add("gates-on"));
+    ov.querySelector(".gates").classList.add("gates-on"));
   document.querySelectorAll(".node").forEach((n) =>
     n.addEventListener("click", () => {
       const id = n.dataset.node;
@@ -204,7 +263,7 @@ async function detail(id) {
       } catch (e) { alert(e.reason || e.error); }
       kpis(); reconTable(); detail(id); stream();
     }));
-  $("#detail").scrollIntoView({behavior: REDUCED ? "auto" : "smooth"});
+
 }
 
 /* ---------- root causes & prevention (real /clusters) ---------- */
@@ -215,9 +274,9 @@ async function clusters() {
       <h3>${c.cluster_title} \u00b7 <span class="chip
         ${c.status === "CONFIRMED" ? "ok" : "REJECTED"}">${c.status}</span>
         \u00b7 trend ${c.trend}</h3>
+      <div class="big">${rupee(c.gross_leakage_paise)}</div>
       <p class="mono">${c.affected_transaction_count} exceptions \u00b7
-        gross ${rupee(c.gross_leakage_paise)} \u00b7 recovered
-        ${rupee(c.recovered_paise)}
+        recovered ${rupee(c.recovered_paise)}
         ${c.ai_claimed_count_corrected ?
           " \u00b7 AI count corrected from source" : ""}</p>
       <p class="mono">${c.validation_reason}</p>
@@ -249,8 +308,21 @@ async function evaluation() {
       (ACTUAL) \u00b7 preventable
       ${rupee(result.variant_d.estimated_preventable_paise)} (ESTIMATED)`,
      result.variant_c.packages]];
+  const w = result.variant_d.waterfall;
+  const WF = [["Gross leakage (OBSERVED)", w.gross_leakage_paise, ""],
+    ["Claimed (after 8 gates)", w.claimed_paise, ""],
+    ["Approved by counterparties", w.approved_paise, ""],
+    ["Recovered (ACTUAL)", w.recovered_paise, ""],
+    ["Net recovered", w.net_recovered_paise, ""],
+    ["Preventable (ESTIMATED)",
+     result.variant_d.estimated_preventable_paise, "est"]];
+  const wmax = Math.max(...WF.map((x) => x[1]));
+  const wfHtml = `<div class="wf-money">${WF.map(([n, v, cls]) =>
+    `<div class="row"><span>${n}</span>
+     <span class="bar ${cls}"><i data-w="${(v / wmax * 100).toFixed(1)}">
+     </i></span><span>${rupee(v)}</span></div>`).join("")}</div>`;
   const max = Math.max(...rows.map((r) => r[2]));
-  $("#evaluation").innerHTML = `<div class="abl">
+  $("#evaluation").innerHTML = wfHtml + `<div class="abl">
     ${rows.map(([name, note, val]) => `<div class="row">
       <span>${name}</span>
       <span class="bar"><i data-w="${(val / max * 100).toFixed(0)}"></i>
@@ -258,9 +330,11 @@ async function evaluation() {
     <p class="mono">integrity ${result.integrity.status} \u00b7 run
       ${result.evaluation_run_id} \u00b7 reproducibility hash
       ${result.evaluation_result_hash.slice(0, 16)}\u2026</p>`;
-  requestAnimationFrame(() =>
-    document.querySelectorAll(".abl .bar i").forEach((i) =>
-      i.style.width = i.dataset.w + "%"));
+  const bars = document.querySelectorAll("#evaluation .bar i");
+  observe([$("#evaluation")], "on");
+  $("#evaluation").addEventListener("revealed", () =>
+    bars.forEach((i) => i.style.width = i.dataset.w + "%"));
+  if (REDUCED) bars.forEach((i) => i.style.width = i.dataset.w + "%");
 }
 
 async function stream() {
