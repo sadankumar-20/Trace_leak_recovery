@@ -708,6 +708,22 @@ $("#verify").addEventListener("click", async () => {
   $("#auditsum").textContent = msg;
 });
 
+(() => {  // initial navigation state: ALWAYS Overview at the top.
+  // Root causes fixed here, not cosmetically:
+  // (1) the tabs are hash anchors, so a refresh after clicking one
+  //     jumps straight back to that section via the URL hash;
+  // (2) browsers restore the previous scroll position on refresh
+  //     (scrollRestoration defaults to "auto");
+  // (3) at scroll 0 the hero (not a tab target) fills the viewport,
+  //     so without an explicit default no tab is active at all.
+  if ("scrollRestoration" in history)
+    history.scrollRestoration = "manual";            // fixes (2)
+  if (location.hash)
+    history.replaceState(null, "", location.pathname); // fixes (1)
+  scrollTo(0, 0);
+  const first = document.querySelector(".tabs a");
+  if (first) first.classList.add("active");          // fixes (3)
+})();
 (() => {  // active top-tab tracking
   const tabs = [...document.querySelectorAll(".tabs a")];
   const secs = tabs.map((a) => document.querySelector(a.hash));
