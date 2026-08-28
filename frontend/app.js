@@ -28,6 +28,31 @@ const observe = (els, cls) => {
   els.forEach((el) => io.observe(el));
 };
 
+/* ---------- boot hero: the system coming online ---------- */
+const LIFECYCLE = ["OBSERVE","RECONCILE","DETECT","INVESTIGATE","PROVE","DECIDE","RECOVER","VERIFY","LEARN","PREVENT"];
+async function hero() {
+  const h = await api("/health");
+  const el = document.createElement("section");
+  el.id = "hero";
+  el.innerHTML = `
+   <div class="boot wordmark">TRACE<span>.</span></div>
+   <div class="boot sys">SYSTEM ONLINE \u00b7 <b>${h.exceptions}</b>
+     EXCEPTIONS UNDER INVESTIGATION \u00b7 CLOCK ${h.clock} \u00b7
+     ${h.mode.toUpperCase()}</div>
+   <div class="boot tag">Find the money that disappeared between payment
+     and settlement.</div>
+   <div class="boot doctrine">AI INVESTIGATES<i></i>SYSTEMS PROVE<i></i>
+     POLICY DECIDES<i></i>THE EXECUTOR ACTS</div>
+   <div class="boot down">\u2193</div>`;
+  document.querySelector("main").prepend(el);
+  const boots = [...el.querySelectorAll(".boot")];
+  boots.forEach((b, i) => setTimeout(() => b.classList.add("on"),
+    REDUCED ? 0 : 350 + i * 520));
+  const sweep = document.createElement("div");
+  sweep.className = "sweep";
+  document.body.appendChild(sweep);
+}
+
 /* ---------- the Overview story: ten beats, real numbers ---------- */
 async function story() {
   const [k, ev, ex] = await Promise.all([
@@ -36,34 +61,34 @@ async function story() {
   const sample = ex.exceptions.find((e) =>
     e.type === "missing_settlement") || ex.exceptions[0];
   const BEATS = [
-    ["THE QUIET PROBLEM", `Money appears correct.`],
-    ["THREE LEDGERS", `Then the order book, the gateway and the bank
+    ["OBSERVE", `Money appears correct.`],
+    ["RECONCILE", `Then the order book, the gateway and the bank
       disagree — <b class="num">${rupee(k.leakage_found_paise)}</b> of
       leakage hidden inside a 5,000-order quarter.`],
-    ["THE BROKEN EDGE", `Trace finds it deterministically: ${sample.order.id}
+    ["DETECT", `Trace finds it deterministically: ${sample.order.id}
       settled at the gateway, and the bank never posted the UTR — a broken
       edge in the evidence graph, <b class="num">${rupee(Math.abs(
       sample.delta_paise))}</b> short.`],
-    ["AI INVESTIGATES", `A bounded investigator reads only what the tools
+    ["INVESTIGATE", `A bounded investigator reads only what the tools
       return, and proposes a hypothesis — labeled untrusted.`],
-    ["SYSTEMS PROVE", `Deterministic validation recomputes every claim to
+    ["PROVE", `Deterministic validation recomputes every claim to
       the paisa. The AI was wrong <b class="num">${r.variant_b.errors}</b>
       times on held-out. Errors that escaped:
       <b class="num">${r.variant_b.escaped}</b>.`],
-    ["POLICY DECIDES", `Eight gates and counterparty economics:
+    ["DECIDE", `Eight gates and counterparty economics:
       <b class="num">${r.variant_c.packages}</b> claims filed,
       <b class="num">${r.variant_c.write_off}</b> written off because
       pursuing them costs more than they return,
       <b class="num">${r.variant_c.escalate}</b> sent to humans.`],
-    ["EXECUTOR ACTS", `One idempotent execution per exception — ever.
+    ["RECOVER", `One idempotent execution per exception — ever.
       Double executions so far:
       <b class="num">${k.double_executions}</b>.`],
-    ["MONEY RETURNS", `Actual recovery, verified against the ledger:
+    ["VERIFY", `Actual recovery, verified against the ledger:
       <b class="num">${rupee(k.recovered_paise)}</b> gross,
       <b class="num">${rupee(k.net_recovered_paise)}</b> net.`],
-    ["PATTERNS EMERGE", `Exceptions cluster into systemic root causes —
+    ["LEARN", `Exceptions cluster into systemic root causes —
       confirmed only when they survive deterministic challenge.`],
-    ["PREVENTION", `Fixing the causes is worth an
+    ["PREVENT", `Fixing the causes is worth an
       <span class="est">estimated
       <b class="num">${rupee(k.estimated_preventable_paise)}</b></span>
       in future leakage — labeled ESTIMATED, never added to actual
@@ -74,8 +99,9 @@ async function story() {
       <span class="kick">${kick}</span><p>${wordize(text)}</p>
       <div class="rulebar"></div>
     </div></div>`).join("");
-  $("#rail").innerHTML = BEATS.map(() => "<i></i>").join("");
-  const dots = [...document.querySelectorAll("#rail i")];
+  $("#rail").innerHTML = LIFECYCLE.map((s) =>
+    `<div class="stage">${s}</div>`).join("");
+  const dots = [...document.querySelectorAll("#rail .stage")];
   new IntersectionObserver((es) => es.forEach((e) => {
     const idx = [...document.querySelectorAll(".beat")]
       .indexOf(e.target);
@@ -87,7 +113,10 @@ async function story() {
         if (e.isIntersecting) {
           const idx = [...document.querySelectorAll(".beat")]
             .indexOf(e.target);
-          dots.forEach((d, j) => d.classList.toggle("on", j === idx));
+          dots.forEach((d, j) => {
+            d.classList.toggle("on", j === idx);
+            d.classList.toggle("done", j < idx);
+          });
         }
       }), { threshold: 0.6 }).observe(b)) : null;
   document.querySelectorAll(".beat").forEach((b, i) => {
@@ -159,8 +188,13 @@ function drawCards() {
         <span class="chip warn">${e.decision}</span>
         <span class="chip ok">${e.state}</span></div>
     </div>`).join("") || "<p class='mono'>no cases match</p>";
-  document.querySelectorAll(".case").forEach((c) =>
-    c.addEventListener("click", () => detail(c.dataset.id)));
+  const cardEls = [...document.querySelectorAll(".case")];
+  cardEls.forEach((c, i) => {
+    c.style.transitionDelay = REDUCED ? "0s" : `${(i % 6) * 70}ms`;
+    c.addEventListener("click", () => detail(c.dataset.id));
+  });
+  if (REDUCED) cardEls.forEach((c) => c.classList.add("on"));
+  else observe(cardEls, "on");
 }
 
 /* ---------- detail: interactive graph, animated gates, timeline ------- */
@@ -187,9 +221,25 @@ async function detail(id) {
    </div><div class="body">
    <button class="close" id="closeov">CLOSE \u2715</button>
    <h2>${id}</h2>
-   <p class="sub">${d.discrepancy.discrepancy_type} \u00b7
-       \u0394 ${rupee(Math.abs(d.discrepancy.delta_paise))} \u00b7
-       deadline ${d.discrepancy.claim_deadline}</p>
+   <div class="dossier">
+     <div><div class="lab">CASE</div>
+       <div class="val">${id.replace("exc_", "").toUpperCase()
+         .slice(0, 18)}</div></div>
+     <div><div class="lab">STATUS</div>
+       <div class="val">${d.case.state}</div></div>
+     <div><div class="lab">TYPE</div>
+       <div class="val">${d.discrepancy.discrepancy_type
+         .replace(/_/g, " ").toUpperCase()}</div></div>
+     <div><div class="lab">OBSERVED LOSS</div>
+       <div class="val loss">${rupee(Math.abs(
+         d.discrepancy.delta_paise))}</div></div>
+     <div><div class="lab">DECISION</div>
+       <div class="val">${d.decision.selected_action}</div></div>
+     <div><div class="lab">EVIDENCE</div>
+       <div class="val">${d.ai.verdict === "SUPPORTED"
+         ? "VERIFIED" : d.ai.verdict}</div></div>
+   </div>
+   <p class="sub">deadline ${d.discrepancy.claim_deadline}</p>
    <div class="cols">
     <div class="card"><h3>EVIDENCE GRAPH (${Object.keys(g.nodes).length}
       hash-verified nodes \u2014 click a node to trace its edges)</h3>
@@ -353,5 +403,5 @@ $("#verify").addEventListener("click", async () => {
   $("#auditsum").textContent = msg;
 });
 
-story(); kpis(); reconTable(); clusters(); evaluation(); stream();
+hero(); story(); kpis(); reconTable(); clusters(); evaluation(); stream();
 setInterval(stream, 5000);

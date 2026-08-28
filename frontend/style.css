@@ -194,3 +194,91 @@ transition:width 1s ease}
  padding:22px 0}.tabs,.progress-rail{display:none}
  .file{grid-template-columns:1fr}.rail2{display:flex;gap:8px;
  flex-wrap:wrap}}
+
+/* ============ T10.3 — cinematic control room ============ */
+/* ambient motion: grid + slow radial light + sweep (transform/opacity only) */
+body::before{content:"";position:fixed;inset:0;z-index:-2;
+background-image:linear-gradient(var(--rule) 1px,transparent 1px),
+linear-gradient(90deg,var(--rule) 1px,transparent 1px);
+background-size:56px 56px;opacity:.14}
+body::after{content:"";position:fixed;inset:-30%;z-index:-1;
+background:radial-gradient(closest-side,
+color-mix(in srgb,var(--forest) 14%,transparent),transparent 70%);
+animation:drift 26s ease-in-out infinite alternate;pointer-events:none}
+@keyframes drift{from{transform:translate(-6%,-4%) scale(1)}
+to{transform:translate(6%,5%) scale(1.06)}}
+.sweep{position:fixed;top:0;bottom:0;width:140px;z-index:-1;
+background:linear-gradient(90deg,transparent,
+color-mix(in srgb,var(--brass) 10%,transparent),transparent);
+animation:sweep 18s linear infinite;pointer-events:none}
+@keyframes sweep{from{left:-20%}to{left:120%}}
+
+/* boot hero: the system coming online */
+#hero{min-height:88vh;display:flex;flex-direction:column;
+justify-content:center;align-items:center;text-align:center;gap:14px}
+#hero .boot{opacity:0;transform:translateY(14px);
+transition:opacity .8s ease,transform .8s ease}
+#hero .boot.on{opacity:1;transform:none}
+#hero .wordmark{font:700 clamp(46px,8vw,92px)/1 var(--serif);
+letter-spacing:.04em}
+#hero .wordmark span{color:var(--brass)}
+#hero .sys{font:700 10.5px var(--mono);letter-spacing:.28em;
+color:var(--soft)}
+#hero .sys b{color:var(--ok)}
+#hero .tag{font:clamp(17px,2.4vw,24px)/1.5 var(--serif);
+max-width:640px;color:var(--ink)}
+#hero .doctrine{display:flex;gap:0;align-items:center;flex-wrap:wrap;
+justify-content:center;font:700 11px var(--mono);letter-spacing:.16em;
+color:var(--forest)}
+#hero .doctrine i{width:26px;height:1px;background:var(--brass);
+margin:0 10px;display:inline-block}
+#hero .down{font:20px var(--serif);color:var(--soft);
+animation:nudge 2.2s ease-in-out infinite}
+@keyframes nudge{50%{transform:translateY(6px)}}
+
+/* lifecycle rail: labeled, connected, filling */
+.progress-rail{align-items:flex-start;gap:0}
+.progress-rail .stage{display:flex;align-items:center;gap:8px;
+font:700 8.5px var(--mono);letter-spacing:.14em;color:var(--soft);
+opacity:.5;padding:5px 0;transition:opacity .3s,color .3s}
+.progress-rail .stage::before{content:"";width:7px;height:7px;
+border-radius:50%;background:var(--rule);transition:background .3s,
+transform .3s}
+.progress-rail .stage.on{opacity:1;color:var(--forest)}
+.progress-rail .stage.on::before{background:var(--forest);
+transform:scale(1.5)}
+.progress-rail .stage.done{opacity:.85}
+.progress-rail .stage.done::before{background:var(--brass)}
+
+/* case discovery: staggered entrance + delta pulse + tracing line */
+.case{opacity:0;transform:translateY(14px)}
+.case.on{opacity:1;transform:none;
+transition:opacity .5s ease,transform .5s ease,box-shadow .18s ease}
+.case.on .delta{animation:pulsein .7s ease}
+@keyframes pulsein{0%{opacity:0;transform:scale(1.18)}
+60%{opacity:1;transform:scale(.98)}100%{transform:none}}
+.ledger3{position:relative;overflow:hidden}
+.case.on .ledger3::after{content:"";position:absolute;top:0;left:0;
+height:2px;width:100%;background:linear-gradient(90deg,var(--forest),
+var(--brass),var(--bad));transform:scaleX(0);transform-origin:left;
+animation:tracein .9s .15s ease forwards}
+@keyframes tracein{to{transform:scaleX(1)}}
+
+/* dossier header block */
+.dossier{display:grid;grid-template-columns:repeat(auto-fit,
+minmax(150px,1fr));gap:1px;background:var(--rule);
+border:1px solid var(--rule);margin:12px 0 4px}
+.dossier div{background:var(--panel2);padding:8px 10px}
+.dossier .lab{font:700 8.5px var(--mono);letter-spacing:.18em;
+color:var(--soft)}
+.dossier .val{font:700 14px var(--serif);margin-top:2px}
+.dossier .val.loss{color:var(--bad)}
+.dossier .val.est{color:var(--brass)}
+
+@media (prefers-reduced-motion: reduce){
+ body::after,.sweep,#hero .down{animation:none !important}
+ .sweep{display:none}
+ #hero .boot,.case{opacity:1;transform:none}
+ .case.on .delta,.case.on .ledger3::after{animation:none}
+ .case .ledger3::after{transform:scaleX(1)}}
+@media (max-width:900px){.sweep{display:none}}
