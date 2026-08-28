@@ -96,8 +96,11 @@ class TestRealExceptions(Base):
             # (international orders): both must be contained, never
             # silently passed through
             overstated_contained += 1
-        self.assertGreaterEqual(len(results.get("SUPPORTED", [])), 190)
-        self.assertLessEqual(overstated_contained, 15)
+        # contained real-leak errors now include duplicate_capture cases
+        # (the AI inspects the clean sibling) alongside international
+        # overstatements — all contained, none supported
+        self.assertGreaterEqual(len(results.get("SUPPORTED", [])), 175)
+        self.assertLessEqual(overstated_contained, 40)
         self.assertGreaterEqual(overstated_contained, 1)   # intl cases exist
         self.assertTrue(chain.verify(NOW)["valid"])
         r = report(self.exceptions[0],

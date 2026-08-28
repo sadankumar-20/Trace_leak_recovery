@@ -18,7 +18,6 @@ from dataclasses import asdict, dataclass, field
 from datetime import datetime
 
 from .audit import AuditChain
-from .recon import ReconciliationEngine
 from .tools import ToolError, ToolRegistry
 
 HYPOTHESIS_TYPES = ("fee_overcharge", "missing_settlement", "double_refund",
@@ -197,18 +196,26 @@ def validate(hyp: Hypothesis, world: dict, sim_now: str,
         verdict["result"] = "INSUFFICIENT_EVIDENCE"
     else:
         verdict["checks"].append(("evidence_grounding", "PASS", ""))
-        eng = ReconciliationEngine(world, sim_now)
-        res = next(r for r in eng.run()
-                   if r.txn_id in hyp.affected_objects
-                   or (r.discrepancy and r.discrepancy.exception_id
-                       == hyp.exception_id))
-        truth_type = (res.discrepancy.discrepancy_type
-                      if res.discrepancy else "legitimate_difference")
-        truth_amt = abs(res.discrepancy.delta_paise) if res.discrepancy \
-            else 0
-        if hyp.hypothesis_type == "double_refund" and res.discrepancy:
-            truth_amt = res.discrepancy.actual_paise \
-                - res.discrepancy.expected_paise
+        # Anchor truth on the EXCEPTION first, never on the AI's chosen
+        # object: for duplicate captures the naive AI inspects the clean
+        # sibling and calls it legitimate — anchoring truth on that same
+        # sibling let the error ESCAPE (caught by the T9 held-out
+        # benchmark). The deterministic exception is the anchor.
+        from . import gate as _G
+        tmap = _G.recon_truth(world, sim_now)
+        disc = tmap.get(hyp.exception_id)
+        if disc is None:
+            by_txn = {}
+            for d in tmap.values():
+                for tid in d.affected_records.get("gateway_txns", []):
+                    by_txn.setdefault(tid, d)
+            disc = next((by_txn[t] for t in hyp.affected_objects
+                         if t in by_txn), None)
+        truth_type = (disc.discrepancy_type if disc
+                      else "legitimate_difference")
+        truth_amt = abs(disc.delta_paise) if disc else 0
+        if hyp.hypothesis_type == "double_refund" and disc:
+            truth_amt = disc.actual_paise - disc.expected_paise
         agrees = (hyp.hypothesis_type == truth_type
                   and (truth_type == "legitimate_difference"
                        or hyp.suspected_leak_paise == truth_amt

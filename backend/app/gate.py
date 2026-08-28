@@ -16,6 +16,14 @@ from .models import record_hash
 from .recon import ReconciliationEngine
 
 _TRUTH_CACHE: dict = {}
+_BUILDER_CACHE: dict = {}
+
+
+def graph_builder(world: dict):
+    key = id(world)
+    if key not in _BUILDER_CACHE:
+        _BUILDER_CACHE[key] = EvidenceGraphBuilder(world)
+    return _BUILDER_CACHE[key]
 
 
 def recon_truth(world: dict, sim_now: str) -> dict:
@@ -64,7 +72,7 @@ def evaluate(disc: dict, verdict: dict, proposed_amount: int,
                 bad.append(f"hash invalid {table}:{i}")
     graph = None
     if not bad:
-        graph = EvidenceGraphBuilder(world).build(disc)
+        graph = graph_builder(world).build(disc)
         broken = {e["type"] for e in graph.broken_edges()}
         allowed_broken = {"POSTED_AS"} if disc["discrepancy_type"] == \
             "missing_settlement" else set()
