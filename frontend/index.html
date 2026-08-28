@@ -4,24 +4,36 @@
 <link rel="stylesheet" href="style.css"></head><body>
 <header class="topbar">
   <div class="brand">TRACE <span>leak recovery</span></div>
-  <div class="creed">AI INVESTIGATES.&ensp;SYSTEMS PROVE.&ensp;POLICY
-    DECIDES.&ensp;EXECUTOR ACTS.</div>
+  <nav class="tabs">
+    <a href="#story">Overview</a><a href="#ops">Reconciliation</a>
+    <a href="#rootcauses">Root Causes</a><a href="#evalsec">Evaluation</a>
+    <a href="#auditsec">Audit</a></nav>
   <div class="top-right"><span class="pill">&#9679; SIMULATED WORLD</span>
     <button id="verify" class="btn">VERIFY AUDIT CHAIN</button>
     <span id="chainstate" class="mono"></span></div>
 </header>
 <main>
-  <section id="kpis" class="kpis"></section>
-  <section class="grid">
-    <div class="panel">
-      <h2>Reconciliation — ORDER | GATEWAY | BANK</h2>
-      <table id="recon"><thead><tr><th>order</th><th>gateway</th>
-        <th>bank expected → actual</th><th>Δ</th><th>type</th>
-        <th>decision</th><th>state</th></tr></thead><tbody></tbody></table>
+  <section id="story"></section>
+  <section id="ops">
+    <div class="kpis" id="kpis"></div>
+    <div class="grid">
+      <div class="panel">
+        <h2>Reconciliation — ORDER | GATEWAY | BANK</h2>
+        <table id="recon"><thead><tr><th>order</th><th>gateway</th>
+          <th>bank expected → actual</th><th>Δ</th><th>type</th>
+          <th>decision</th><th>state</th></tr></thead><tbody></tbody>
+        </table></div>
+      <div class="panel stream"><h2>Investigation stream</h2>
+        <ul id="stream" class="mono"></ul></div>
     </div>
-    <div class="panel stream"><h2>Investigation stream</h2>
-      <ul id="stream" class="mono"></ul></div>
+    <section id="detail" class="panel detail" hidden></section>
   </section>
-  <section id="detail" class="panel detail" hidden></section>
+  <section id="rootcauses"><h2 class="sechead">Root causes &amp;
+    prevention</h2><div id="clusters" class="cols"></div></section>
+  <section id="evalsec"><h2 class="sechead">Evaluation — four-way
+    ablation (held-out, integrity-gated)</h2>
+    <div id="evaluation"></div></section>
+  <section id="auditsec"><h2 class="sechead">Audit</h2>
+    <p class="mono" id="auditsum"></p></section>
 </main>
 <script src="app.js"></script></body></html>

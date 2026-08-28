@@ -7,22 +7,106 @@ const api = (u, o) => fetch(u, o).then(async (r) => {
   return j;
 });
 const ROLE = "executor";   // demo role; the API enforces it server-side
+const REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+/* ---------- animated numbers (real values only) ---------- */
+function countUp(el, target, fmt) {
+  if (REDUCED) { el.textContent = fmt(target); return; }
+  const t0 = performance.now(), dur = 900;
+  const step = (t) => {
+    const k = Math.min(1, (t - t0) / dur);
+    el.textContent = fmt(Math.round(target * (1 - Math.pow(1 - k, 3))));
+    if (k < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+const observe = (els, cls) => {
+  const io = new IntersectionObserver((es) => es.forEach((e) => {
+    if (e.isIntersecting) { e.target.classList.add(cls); io.unobserve(
+      e.target); e.target.dispatchEvent(new Event("revealed")); }
+  }), { threshold: 0.35 });
+  els.forEach((el) => io.observe(el));
+};
+
+/* ---------- the Overview story: ten beats, real numbers ---------- */
+async function story() {
+  const [k, ev, ex] = await Promise.all([
+    api("/kpis"), api("/evaluation"), api("/exceptions")]);
+  const r = ev.result;
+  const sample = ex.exceptions.find((e) =>
+    e.type === "missing_settlement") || ex.exceptions[0];
+  const BEATS = [
+    ["THE QUIET PROBLEM", `Money appears correct.`],
+    ["THREE LEDGERS", `Then the order book, the gateway and the bank
+      disagree — <b class="num">${rupee(k.leakage_found_paise)}</b> of
+      leakage hidden inside a 5,000-order quarter.`],
+    ["THE BROKEN EDGE", `Trace finds it deterministically: ${sample.order.id}
+      settled at the gateway, and the bank never posted the UTR — a broken
+      edge in the evidence graph, <b class="num">${rupee(Math.abs(
+      sample.delta_paise))}</b> short.`],
+    ["AI INVESTIGATES", `A bounded investigator reads only what the tools
+      return, and proposes a hypothesis — labeled untrusted.`],
+    ["SYSTEMS PROVE", `Deterministic validation recomputes every claim to
+      the paisa. The AI was wrong <b class="num">${r.variant_b.errors}</b>
+      times on held-out. Errors that escaped:
+      <b class="num">${r.variant_b.escaped}</b>.`],
+    ["POLICY DECIDES", `Eight gates and counterparty economics:
+      <b class="num">${r.variant_c.packages}</b> claims filed,
+      <b class="num">${r.variant_c.write_off}</b> written off because
+      pursuing them costs more than they return,
+      <b class="num">${r.variant_c.escalate}</b> sent to humans.`],
+    ["EXECUTOR ACTS", `One idempotent execution per exception — ever.
+      Double executions so far:
+      <b class="num">${k.double_executions}</b>.`],
+    ["MONEY RETURNS", `Actual recovery, verified against the ledger:
+      <b class="num">${rupee(k.recovered_paise)}</b> gross,
+      <b class="num">${rupee(k.net_recovered_paise)}</b> net.`],
+    ["PATTERNS EMERGE", `Exceptions cluster into systemic root causes —
+      confirmed only when they survive deterministic challenge.`],
+    ["PREVENTION", `Fixing the causes is worth an
+      <span class="est">estimated
+      <b class="num">${rupee(k.estimated_preventable_paise)}</b></span>
+      in future leakage — labeled ESTIMATED, never added to actual
+      recovery.`]];
+  $("#story").innerHTML = BEATS.map(([kick, text]) => `
+    <div class="beat"><div class="card-story">
+      <div class="kick">${kick}</div><p>${wordize(text)}</p>
+    </div></div>`).join("");
+  document.querySelectorAll(".beat").forEach((b, i) => {
+    b.querySelectorAll(".w").forEach((w, j) =>
+      w.style.transitionDelay = REDUCED ? "0s" : `${j * 28}ms`);
+  });
+  observe([...document.querySelectorAll(".beat")], "on");
+}
+function wordize(html) {
+  // wrap plain words in reveal spans; keep tags intact
+  return html.split(/(<[^>]+>)/g).map((part) =>
+    part.startsWith("<") ? part :
+    part.split(/\s+/).filter(Boolean).map((w) =>
+      `<span class="w">${w}</span>`).join(" ")).join(" ");
+}
+
+/* ---------- KPI wall (count-up from real values) ---------- */
 async function kpis() {
   const k = await api("/kpis");
-  $("#kpis").innerHTML = `
-   ${tile(k.leakage_found_paise, "leakage found", "OBSERVED")}
-   ${tile(k.claimed_paise, "claimed", "VERIFIED")}
-   ${tile(k.recovered_paise, "recovered", k.labels.recovered)}
-   ${tile(k.net_recovered_paise, "net recovered", "ACTUAL")}
-   ${tile(k.written_off_paise, "written off", "STOPPING RULE")}
-   ${tile(k.estimated_preventable_paise, "prevented future loss",
-          k.labels.preventable, true)}`;
+  const T = [[k.leakage_found_paise, "leakage found", "OBSERVED"],
+    [k.claimed_paise, "claimed", "VERIFIED"],
+    [k.recovered_paise, "recovered", k.labels.recovered],
+    [k.net_recovered_paise, "net recovered", "ACTUAL"],
+    [k.written_off_paise, "written off", "STOPPING RULE"],
+    [k.estimated_preventable_paise, "prevented future loss",
+     k.labels.preventable, true]];
+  $("#kpis").innerHTML = T.map(([v, kk, tag, est], i) =>
+    `<div class="kpi ${est ? "est" : ""}" data-v="${v}">
+      <div class="v">Rs.0</div><div class="k">${kk}</div>
+      <div class="tag">${tag}</div></div>`).join("");
+  const tiles = [...document.querySelectorAll(".kpi")];
+  tiles.forEach((t) => t.addEventListener("revealed", () =>
+    countUp(t.querySelector(".v"), +t.dataset.v, rupee)));
+  observe(tiles, "on");
 }
-const tile = (v, k, tag, est) => `<div class="kpi ${est ? "est" : ""}">
-  <div class="v">${rupee(v)}</div><div class="k">${k}</div>
-  <div class="tag">${tag}</div></div>`;
 
+/* ---------- reconciliation table ---------- */
 async function reconTable() {
   const { exceptions } = await api("/exceptions");
   $("#recon tbody").innerHTML = exceptions.map((e) => `
@@ -38,13 +122,15 @@ async function reconTable() {
     tr.addEventListener("click", () => detail(tr.dataset.id)));
 }
 
+/* ---------- detail: interactive graph, animated gates, timeline ------- */
 async function detail(id) {
   const d = await api("/exceptions/" + id);
   const g = d.evidence_graph;
   const gates = d.admissibility ? Object.entries(
-    d.admissibility.gate_results).map(([k, v]) =>
-    `<div class="gate"><span>${k}</span><span class="g-${v}">${v}</span>
-     </div>`).join("") : "<em>no gate run (verdict not supported)</em>";
+    d.admissibility.gate_results).map(([k, v], i) =>
+    `<div class="gate" style="transition-delay:${REDUCED ? 0 : i * 90}ms">
+      <span>${k}</span><span class="g-${v}">${v}</span></div>`).join("")
+    : "<em>no gate run (verdict not supported)</em>";
   $("#detail").hidden = false;
   $("#detail").innerHTML = `
    <h2>${id} \u00b7 ${d.discrepancy.discrepancy_type} \u00b7
@@ -52,12 +138,14 @@ async function detail(id) {
        deadline ${d.discrepancy.claim_deadline}</h2>
    <div class="cols">
     <div class="card"><h3>EVIDENCE GRAPH (${Object.keys(g.nodes).length}
-      hash-verified nodes)</h3>
-      ${Object.values(g.nodes).map((n) => `<div class="node">${n.table}
-        \u00b7 ${n.id}<br>${n.amount_paise != null ?
-        rupee(n.amount_paise) : ""} <span class="lineage">
-        ${n.record_hash.slice(0, 10)}\u2026</span></div>`).join("")}
-      ${g.edges.map((e) => `<div class="edge ${e.broken ? "broken" : ""}">
+      hash-verified nodes \u2014 click a node to trace its edges)</h3>
+      ${Object.values(g.nodes).map((n) => `<div class="node"
+        data-node="${n.id}">${n.table} \u00b7 ${n.id}<br>
+        ${n.amount_paise != null ? rupee(n.amount_paise) : ""}
+        <span class="lineage">${n.record_hash.slice(0, 10)}\u2026</span>
+        </div>`).join("")}
+      ${g.edges.map((e) => `<div class="edge ${e.broken ? "broken" : ""}"
+        data-src="${e.src}" data-dst="${e.dst || ""}">
         ${e.src} \u2500${e.type}\u2192 ${e.dst || "\u2718 MISSING"}
         </div>`).join("")}</div>
     <div class="card"><h3>AI INVESTIGATION</h3>
@@ -66,25 +154,28 @@ async function detail(id) {
         (${rupee(d.ai.hypothesis.amount_paise)})</div>
       <p class="mono">tools: ${d.ai.tools_used.join(" \u2192 ")}</p>
       <p class="mono">verdict: <b>${d.ai.verdict}</b></p></div>
-    <div class="card"><h3>ADMISSIBILITY \u2014 8 GATES</h3>${gates}</div>
-    <div class="card"><h3>DECISION</h3>
+    <div class="card gates"><h3>ADMISSIBILITY \u2014 8 GATES</h3>
+      ${gates}</div>
+    <div class="card"><h3>DECISION &amp; ECONOMICS</h3>
       <p><b>${d.decision.selected_action}</b></p>
       <p class="mono">${d.decision.reason}</p>
       ${Object.entries(d.decision.rejected_actions || {}).map(([a, r]) =>
         `<p class="mono">\u2717 ${a}: ${r}</p>`).join("")}</div>
-    <div class="card"><h3>EXECUTION &amp; RECOVERY</h3>
+    <div class="card"><h3>EXECUTION &amp; RECOVERY (idempotent)</h3>
       ${d.execution ? `<p class="mono">${d.execution.execution_id} \u00b7
         <span class="chip ${d.execution.execution_status}">
         ${d.execution.execution_status}</span> \u00b7 attempts
-        ${d.execution.attempt_count}</p>` : "<p>none</p>"}
+        ${d.execution.attempt_count} \u00b7 idempotency key =
+        exception id</p>` : "<p>none</p>"}
       ${d.recovery ? `<p class="mono">recovered
         ${rupee(d.recovery.recovered_paise)} \u00b7 net
         ${rupee(d.recovery.net_recovery_paise)} \u00b7 ref
         ${d.recovery.counterparty_reference}</p>` : ""}</div>
-    <div class="card"><h3>CASE &amp; AUDIT (${d.audit.length} events)</h3>
-      <p class="mono">state: ${d.case.state}</p>
-      ${d.audit.slice(-6).map((e) => `<div class="mono">#${e.seq}
-        ${e.event_type}</div>`).join("")}</div>
+    <div class="card"><h3>INVESTIGATION TIMELINE
+      (${d.audit.length} audit events)</h3>
+      <ul class="tl">${d.audit.slice(-8).map((e) =>
+        `<li>#${e.seq} \u00b7 ${e.event_type}</li>`).join("")}</ul>
+      <p class="mono">case state: ${d.case.state}</p></div>
    </div>
    <div class="actions">${Object.entries(d.allowed_actions).map(([a, i]) =>
      `<button class="btn" data-act="${a}" ${i.enabled ? "" : "disabled"}
@@ -92,6 +183,18 @@ async function detail(id) {
    </div>
    <p class="mono">disabled actions show the machine reason on hover \u2014
      enforcement is server-side, the UI only reflects it</p>`;
+  requestAnimationFrame(() =>
+    $("#detail .gates").classList.add("gates-on"));
+  document.querySelectorAll(".node").forEach((n) =>
+    n.addEventListener("click", () => {
+      const id = n.dataset.node;
+      const sel = n.classList.toggle("sel");
+      document.querySelectorAll(".node").forEach((m) =>
+        m !== n && m.classList.remove("sel"));
+      document.querySelectorAll(".edge").forEach((e) =>
+        e.classList.toggle("dim", sel && e.dataset.src !== id
+          && e.dataset.dst !== id));
+    }));
   document.querySelectorAll("[data-act]").forEach((b) =>
     b.addEventListener("click", async () => {
       try {
@@ -101,6 +204,63 @@ async function detail(id) {
       } catch (e) { alert(e.reason || e.error); }
       kpis(); reconTable(); detail(id); stream();
     }));
+  $("#detail").scrollIntoView({behavior: REDUCED ? "auto" : "smooth"});
+}
+
+/* ---------- root causes & prevention (real /clusters) ---------- */
+async function clusters() {
+  const { clusters } = await api("/clusters");
+  $("#clusters").innerHTML = clusters.map((c) => `
+    <div class="card cluster ${c.status === "FALSE_PATTERN" ? "false" : ""}">
+      <h3>${c.cluster_title} \u00b7 <span class="chip
+        ${c.status === "CONFIRMED" ? "ok" : "REJECTED"}">${c.status}</span>
+        \u00b7 trend ${c.trend}</h3>
+      <p class="mono">${c.affected_transaction_count} exceptions \u00b7
+        gross ${rupee(c.gross_leakage_paise)} \u00b7 recovered
+        ${rupee(c.recovered_paise)}
+        ${c.ai_claimed_count_corrected ?
+          " \u00b7 AI count corrected from source" : ""}</p>
+      <p class="mono">${c.validation_reason}</p>
+      ${c.prevention ? `<div class="prev"><b>${c.prevention.label}:
+        ${rupee(c.prevention.estimated_preventable_paise)}</b>
+        (priority ${c.prevention.priority}) \u2014
+        ${c.prevention.proposed_control}</div>` : ""}
+    </div>`).join("");
+}
+
+/* ---------- evaluation (real /evaluation, animated bars) ---------- */
+async function evaluation() {
+  const { result } = await api("/evaluation");
+  const rows = [
+    ["A \u00b7 Matcher only",
+     `recall ${(result.variant_a.leak_recall * 100).toFixed(0)}% \u00b7
+      precision ${(result.variant_a.leak_precision * 100).toFixed(0)}%`,
+     result.cases],
+    ["B \u00b7 + AI + containment",
+     `${result.variant_b.correct} correct \u00b7 escaped
+      <span class="red">${result.variant_b.escaped}</span>`,
+     result.variant_b.correct],
+    ["C \u00b7 + gates + decision",
+     `${result.variant_c.packages} filed \u00b7
+      ${result.variant_c.write_off} written off`,
+     result.variant_c.packages],
+    ["D \u00b7 full Trace",
+     `net ${rupee(result.variant_d.waterfall.net_recovered_paise)}
+      (ACTUAL) \u00b7 preventable
+      ${rupee(result.variant_d.estimated_preventable_paise)} (ESTIMATED)`,
+     result.variant_c.packages]];
+  const max = Math.max(...rows.map((r) => r[2]));
+  $("#evaluation").innerHTML = `<div class="abl">
+    ${rows.map(([name, note, val]) => `<div class="row">
+      <span>${name}</span>
+      <span class="bar"><i data-w="${(val / max * 100).toFixed(0)}"></i>
+      </span><span>${note}</span></div>`).join("")}</div>
+    <p class="mono">integrity ${result.integrity.status} \u00b7 run
+      ${result.evaluation_run_id} \u00b7 reproducibility hash
+      ${result.evaluation_result_hash.slice(0, 16)}\u2026</p>`;
+  requestAnimationFrame(() =>
+    document.querySelectorAll(".abl .bar i").forEach((i) =>
+      i.style.width = i.dataset.w + "%"));
 }
 
 async function stream() {
@@ -112,9 +272,12 @@ async function stream() {
 
 $("#verify").addEventListener("click", async () => {
   const v = await api("/audit/verify");
-  $("#chainstate").textContent = v.valid
+  const msg = v.valid
     ? `\u2713 ${v.events} events verified \u00b7 no mutation detected`
     : `\u2717 first invalid at #${v.first_invalid_seq}`;
+  $("#chainstate").textContent = msg;
+  $("#auditsum").textContent = msg;
 });
 
-kpis(); reconTable(); stream(); setInterval(stream, 5000);
+story(); kpis(); reconTable(); clusters(); evaluation(); stream();
+setInterval(stream, 5000);

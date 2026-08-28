@@ -105,3 +105,25 @@ class TestCockpit(Base):
         self.assertIn("VERIFY AUDIT CHAIN", html)
         self.assertIn("SIMULATED WORLD", html)
         self.assertIn("enforcement is server-side", js)
+
+
+    def test_premium_layer_wired_to_real_data(self):
+        fe = Path(__file__).resolve().parents[2] / "frontend"
+        js = (fe / "app.js").read_text()
+        css = (fe / "style.css").read_text()
+        html = (fe / "index.html").read_text()
+        # story beats present and fed from APIs, not literals
+        for needle in ("Money appears correct", "IntersectionObserver",
+                       "prefers-reduced-motion", "countUp",
+                       '"/clusters"', '"/evaluation"', "wordize"):
+            self.assertIn(needle, js + css)
+        self.assertIn("id=\"story\"", html)
+        self.assertIn("Root Causes", html)
+        # reduced-motion path disables animation and un-sticks beats
+        self.assertIn("transition:none !important", css)
+        # no hardcoded financial values (>=4 digit literals, excluding
+        # unicode escapes and the 5000ms poll interval)
+        import re
+        clean = re.sub(r"\\u[0-9a-fA-F]{4}", "", js)
+        nums = set(re.findall(r"\b\d{4,}\b", clean)) - {"5000"}
+        self.assertEqual(nums, set(), nums)
