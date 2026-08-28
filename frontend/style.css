@@ -114,6 +114,12 @@ color:var(--ok)}
 .chip.EXCEPTION,.chip.REJECTED{background:var(--badbg);color:var(--bad)}
 
 /* ---- overlay case file ---- */
+/* ROOT-CAUSE FIX: the hidden ATTRIBUTE only works via the UA rule
+   [hidden]{display:none}, and author styles always beat UA styles —
+   so .overlay's display:flex was defeating hidden, leaving an
+   invisible full-viewport z-40 click shield over the whole page.
+   This rule restores hidden's meaning with author-level force. */
+.overlay[hidden]{display:none !important}
 .overlay{position:fixed;inset:0;z-index:40;background:
 color-mix(in srgb,var(--deep) 55%,transparent);display:flex;
 justify-content:center;align-items:flex-start;overflow:auto;padding:4vh 2vw}

@@ -135,3 +135,19 @@ class TestCockpit(Base):
         clean = re.sub(r"\\u[0-9a-fA-F]{4}", "", js)
         nums = set(re.findall(r"\b\d{4,}\b", clean)) - {"5000"}
         self.assertEqual(nums, set(), nums)
+
+
+    def test_hidden_overlay_cannot_shield_clicks(self):
+        """Regression: .overlay pairs the hidden ATTRIBUTE with an author
+        display rule; author styles beat the UA [hidden]{display:none},
+        so without an explicit override the closed overlay is a
+        full-viewport z-40 click shield killing every interaction."""
+        css = (Path(__file__).resolve().parents[2] / "frontend"
+               / "style.css").read_text()
+        self.assertIn(".overlay[hidden]{display:none !important}", css)
+        # and every other fixed full-viewport decorative layer must
+        # explicitly pass clicks through
+        import re
+        for name in ("dustfield",):
+            block = re.search(r"\." + name + r"\{[^}]*\}", css).group()
+            self.assertIn("pointer-events:none", block)
