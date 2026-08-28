@@ -1,0 +1,27 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Trace — Settlement &amp; Refund Leak Recovery</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<header class="topbar">
+  <div class="brand">TRACE <span>leak recovery</span></div>
+  <div class="creed">AI INVESTIGATES.&ensp;SYSTEMS PROVE.&ensp;POLICY
+    DECIDES.&ensp;EXECUTOR ACTS.</div>
+  <div class="top-right"><span class="pill">&#9679; SIMULATED WORLD</span>
+    <button id="verify" class="btn">VERIFY AUDIT CHAIN</button>
+    <span id="chainstate" class="mono"></span></div>
+</header>
+<main>
+  <section id="kpis" class="kpis"></section>
+  <section class="grid">
+    <div class="panel">
+      <h2>Reconciliation — ORDER | GATEWAY | BANK</h2>
+      <table id="recon"><thead><tr><th>order</th><th>gateway</th>
+        <th>bank expected → actual</th><th>Δ</th><th>type</th>
+        <th>decision</th><th>state</th></tr></thead><tbody></tbody></table>
+    </div>
+    <div class="panel stream"><h2>Investigation stream</h2>
+      <ul id="stream" class="mono"></ul></div>
+  </section>
+  <section id="detail" class="panel detail" hidden></section>
+</main>
+<script src="app.js"></script></body></html>
