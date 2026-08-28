@@ -108,8 +108,14 @@ async function story() {
       <span class="kick">${kick}</span><p>${wordize(text)}</p>
       <div class="rulebar"></div>
     </div></div>`).join("");
-  $("#rail").innerHTML = LIFECYCLE.map((s) =>
-    `<div class="stage">${s}</div>`).join("");
+  $("#rail").innerHTML = LIFECYCLE.map((s, i) =>
+    `<button class="stage" data-beat="${i}"
+      aria-label="Go to ${s}">${s}</button>`).join("");
+  document.querySelectorAll("#rail .stage").forEach((st) =>
+    st.addEventListener("click", () =>
+      document.querySelectorAll(".beat")[+st.dataset.beat]
+        .scrollIntoView({behavior: REDUCED ? "auto" : "smooth",
+                         block: "start"})));
   const dots = [...document.querySelectorAll("#rail .stage")];
   new IntersectionObserver((es) => es.forEach((e) => {
     const idx = [...document.querySelectorAll(".beat")]
@@ -195,6 +201,8 @@ function drawCards() {
     && (!QUERY || `${e.order.id} ${e.exception_id} ${e.gateway.id}
         ${e.type} ${e.decision} ${e.state}`
         .toLowerCase().includes(QUERY)));
+  $("#count").textContent = `${rows.length} of ${ALL_CASES.length}
+    cases`;
   $("#cards").innerHTML = rows.map((e) => `
     <div class="case" tabindex="0" data-id="${e.exception_id}">
       <div class="head"><span class="oid">${e.order.id}</span>
@@ -213,7 +221,9 @@ function drawCards() {
       <div class="meta">${e.exception_id} \u00b7 ${e.gateway.id}
         \u00b7 state ${e.state} \u00b7 deadline
         ${e.deadline.slice(0, 10)}</div>
-    </div>`).join("") || "<p class='mono'>no cases match</p>";
+    </div>`).join("") || `<p class='mono' style='grid-column:1/-1;padding:22px;
+    text-align:center'>No cases match the current filter and search.
+    Clear them to see all ${ALL_CASES.length} cases.</p>`;
   const cardEls = [...document.querySelectorAll(".case")];
   cardEls.forEach((c, i) => {
     c.style.transitionDelay = REDUCED ? "0s" : `${(i % 6) * 70}ms`;
@@ -604,8 +614,10 @@ $("#verify").addEventListener("click", async () => {
   sys.className = "busy";
   sys.textContent = "VERIFYING\u2026";
   const vp = api("/audit/verify");            // the REAL endpoint
-  if (!REDUCED) await new Promise((r) => setTimeout(r, 350));
-  sys.textContent = "CHECKING HASHES\u2026";
+  if (!REDUCED) await new Promise((r) => setTimeout(r, 300));
+  sys.textContent = "CHECKING AUDIT EVENTS\u2026";
+  if (!REDUCED) await new Promise((r) => setTimeout(r, 300));
+  sys.textContent = "VERIFYING HASH CHAIN\u2026";
   const v = await vp;
   const msg = v.valid
     ? `\u2713 ${v.events} events verified \u00b7 no mutation detected`
@@ -616,5 +628,18 @@ $("#verify").addEventListener("click", async () => {
   $("#auditsum").textContent = msg;
 });
 
+(() => {  // active top-tab tracking
+  const tabs = [...document.querySelectorAll(".tabs a")];
+  const secs = tabs.map((a) => document.querySelector(a.hash));
+  new IntersectionObserver((es) => es.forEach((e) => {
+    if (e.isIntersecting) tabs.forEach((a) =>
+      a.classList.toggle("active", a.hash === "#" + e.target.id));
+  }), { rootMargin: "-40% 0px -55% 0px" })
+    .constructor && secs.forEach((s, i) => s &&
+      new IntersectionObserver((es) => es.forEach((e) => {
+        if (e.isIntersecting) tabs.forEach((a) =>
+          a.classList.toggle("active", a === tabs[i]));
+      }), { rootMargin: "-30% 0px -60% 0px" }).observe(s));
+})();
 hero(); story(); kpis(); reconTable(); clusters(); evaluation(); stream();
 setInterval(stream, 5000);

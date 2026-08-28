@@ -475,3 +475,12 @@ color:var(--soft);background:var(--panel)}
  body::before,#hero::before{transform:none !important}
  #stream li.new,.btn:hover::after{animation:none !important}
  .beat .chapter,.arch .stage-t{opacity:1;transform:none}}
+
+/* T10.6 interaction fixes */
+.tabs a.active{color:var(--forest);border-color:var(--brass)}
+.progress-rail .stage{background:none;border:0;cursor:pointer;
+text-align:left;font:700 8.5px var(--mono);letter-spacing:.14em}
+.progress-rail .stage:hover{opacity:1;color:var(--forest)}
+.progress-rail .stage:focus-visible{outline:2px solid var(--brass);
+outline-offset:2px}
+#count{color:var(--soft);align-self:center;padding-bottom:8px}
