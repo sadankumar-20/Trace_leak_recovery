@@ -503,3 +503,32 @@ color:var(--brass);margin-bottom:5px}
 @media (prefers-reduced-motion: reduce){
  .facts>div{opacity:1;transform:none;transition:none}
  .overlay.closing .file{animation:none}}
+
+/* ============ T10.9 — final motion details ============ */
+/* floating particles (CSS-only, reduced-motion gated) */
+.dustfield{position:fixed;inset:0;z-index:-1;pointer-events:none}
+.dust{position:absolute;width:3px;height:3px;border-radius:50%;
+background:color-mix(in srgb,var(--brass) 45%,transparent);
+animation:float 16s linear infinite}
+.dust:nth-child(2n){background:color-mix(in srgb,var(--forest) 35%,
+transparent);animation-duration:22s}
+.dust:nth-child(3n){width:2px;height:2px;animation-duration:28s}
+@keyframes float{from{transform:translateY(105vh)}
+to{transform:translateY(-8vh)}}
+
+/* card 3D tilt (subtle) */
+.case:hover{transform:translateY(-3px) perspective(700px) rotateX(1.6deg)}
+
+/* lifecycle rail: connected system with active glow */
+.progress-rail{position:fixed;padding-left:3px}
+.progress-rail::before{content:"";position:absolute;left:5px;top:12px;
+bottom:12px;width:1px;background:var(--rule)}
+.progress-rail .stage{position:relative;z-index:1}
+.progress-rail .stage.on::before{box-shadow:0 0 0 4px
+color-mix(in srgb,var(--forest) 20%,transparent),0 0 10px
+color-mix(in srgb,var(--forest) 35%,transparent)}
+
+@media (prefers-reduced-motion: reduce){
+ .dust{animation:none;display:none}
+ .case:hover{transform:none}}
+@media (max-width:900px){.dustfield{display:none}}

@@ -51,6 +51,14 @@ async function hero() {
   const sweep = document.createElement("div");
   sweep.className = "sweep";
   document.body.appendChild(sweep);
+  if (!REDUCED) {                       // floating particles, fixed seeds
+    const dust = document.createElement("div");
+    dust.className = "dustfield";
+    dust.innerHTML = Array.from({length: 14}, (_, i) =>
+      `<span class="dust" style="left:${(i * 7.3 + 3) % 100}%;
+       animation-delay:-${(i * 1.7) % 16}s"></span>`).join("");
+    document.body.appendChild(dust);
+  }
   if (!REDUCED) {
     let ticking = false;
     addEventListener("scroll", () => {
