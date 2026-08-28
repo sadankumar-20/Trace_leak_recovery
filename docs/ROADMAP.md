@@ -1,5 +1,5 @@
 # Trace build roadmap (one meaningful commit per stage, STOP between)
-T1 world + object model (THIS)          | spec §1–2
+T1 world + object model (DONE)          | spec §1–2
 T2 deterministic reconciliation engine  | §3  — typed states, paisa-exact discrepancies
 T3 settlement lifecycle + WAIT + SLAs   | §4, §11
 T4 evidence graph + audit hash chain    | §5, §13
@@ -10,3 +10,5 @@ T8 clustering + prevention engine       | §14–15
 T9 eval: 4-way ablation, reproducibility| §16
 T10 cockpit: recon view, stream, KPIs   | §17–20
 T11 roles, security, final story        | §21–24
+
+All stages T1-T11 complete.
