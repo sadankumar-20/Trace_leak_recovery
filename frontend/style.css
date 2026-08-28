@@ -538,3 +538,6 @@ color-mix(in srgb,var(--forest) 35%,transparent)}
  .dust{animation:none;display:none}
  .case:hover{transform:none}}
 @media (max-width:900px){.dustfield{display:none}}
+
+/* keep top-nav destinations clear of the sticky header */
+#ops,#rootcauses,#evalsec,#auditsec{scroll-margin-top:64px}

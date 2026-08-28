@@ -173,11 +173,36 @@ async function story() {
   $("#rail").innerHTML = LIFECYCLE.map((s, i) =>
     `<button class="stage" data-beat="${i}"
       aria-label="Go to ${s}">${s}</button>`).join("");
+  // ROOT-CAUSE FIX: the chapters are position:sticky, so a chapter the
+  // user has scrolled PAST is pinned at rect.top ~ 0 — scrollIntoView
+  // then computes a destination equal to the current position and
+  // upward navigation goes nowhere. Navigate to the chapter's STATIC
+  // layout slot instead: the story's document offset plus the summed
+  // flow heights of all previous chapters (offsetHeight is layout
+  // truth, immune to sticky pinning). Works identically in both
+  // directions from any scroll position.
+  function scrollToLifecycle(i) {
+    const story = $("#story");
+    const beats = [...story.querySelectorAll(".beat")];
+    if (!beats[i]) return;
+    const headerOffset =
+      document.querySelector(".topbar").offsetHeight || 0;
+    let top = story.getBoundingClientRect().top + scrollY;
+    for (let j = 0; j < i; j++) top += beats[j].offsetHeight;
+    window.scrollTo({ top: Math.max(0, top - headerOffset),
+                      behavior: REDUCED ? "auto" : "smooth" });
+    // clicked item becomes active immediately; the existing
+    // IntersectionObserver (class toggles only — it never scrolls, so
+    // it cannot cancel this navigation) takes back over as the user
+    // moves on.
+    document.querySelectorAll("#rail .stage").forEach((d, j) => {
+      d.classList.toggle("on", j === i);
+      d.classList.toggle("done", j < i);
+    });
+  }
   document.querySelectorAll("#rail .stage").forEach((st) =>
     st.addEventListener("click", () =>
-      document.querySelectorAll(".beat")[+st.dataset.beat]
-        .scrollIntoView({behavior: REDUCED ? "auto" : "smooth",
-                         block: "start"})));
+      scrollToLifecycle(+st.dataset.beat)));
   const dots = [...document.querySelectorAll("#rail .stage")];
   new IntersectionObserver((es) => es.forEach((e) => {
     const idx = [...document.querySelectorAll(".beat")]
