@@ -70,42 +70,96 @@ async function story() {
   const sample = ex.exceptions.find((e) =>
     e.type === "missing_settlement") || ex.exceptions[0];
   const BEATS = [
-    ["OBSERVE", `Money appears correct.`],
-    ["RECONCILE", `Then the order book, the gateway and the bank
-      disagree — <b class="num">${rupee(k.leakage_found_paise)}</b> of
-      leakage hidden inside a 5,000-order quarter.`],
-    ["DETECT", `Trace finds it deterministically: ${sample.order.id}
-      settled at the gateway, and the bank never posted the UTR — a broken
-      edge in the evidence graph, <b class="num">${rupee(Math.abs(
-      sample.delta_paise))}</b> short.`],
-    ["INVESTIGATE", `A bounded investigator reads only what the tools
-      return, and proposes a hypothesis — labeled untrusted.`],
-    ["PROVE", `Deterministic validation recomputes every claim to
-      the paisa. The AI was wrong <b class="num">${r.variant_b.errors}</b>
-      times on held-out. Errors that escaped:
-      <b class="num">${r.variant_b.escaped}</b>.`],
-    ["DECIDE", `Eight gates and counterparty economics:
-      <b class="num">${r.variant_c.packages}</b> claims filed,
-      <b class="num">${r.variant_c.write_off}</b> written off because
-      pursuing them costs more than they return,
-      <b class="num">${r.variant_c.escalate}</b> sent to humans.`],
-    ["RECOVER", `One idempotent execution per exception — ever.
-      Double executions so far:
-      <b class="num">${k.double_executions}</b>.`],
-    ["VERIFY", `Actual recovery, verified against the ledger:
-      <b class="num">${rupee(k.recovered_paise)}</b> gross,
-      <b class="num">${rupee(k.net_recovered_paise)}</b> net.`],
-    ["LEARN", `Exceptions cluster into systemic root causes —
-      confirmed only when they survive deterministic challenge.`],
-    ["PREVENT", `Fixing the causes is worth an
-      <span class="est">estimated
-      <b class="num">${rupee(k.estimated_preventable_paise)}</b></span>
-      in future leakage — labeled ESTIMATED, never added to actual
-      recovery.`]];
-  $("#story").innerHTML = BEATS.map(([kick, text], i) => `
+    {kick: "OBSERVE", intro: "Money appears correct.",
+     looks: "Orders \u00b7 Payments \u00b7 Refunds \u00b7 Settlements",
+     happens: "Trace starts by gathering the financial trail \u2014 " +
+       "5,000 orders across a simulated quarter \u2014 and builds the " +
+       "financial picture before deciding anything is wrong.",
+     why: "A recovery system should start with evidence, not a guess."},
+    {kick: "RECONCILE", intro: "Then it asks a simple question: should " +
+       "these records agree?",
+     looks: "Order book \u00b7 Gateway ledger \u00b7 Bank statements",
+     happens: "Deterministic rules tie every capture to its fee, " +
+       "settlement and bank posting \u2014 to the paisa.",
+     why: `They don't always agree: <b class="num">
+       ${rupee(k.leakage_found_paise)}</b> of leakage hides in this
+       quarter.`},
+    {kick: "DETECT", intro: "When they don't, Trace points to the " +
+       "exact break.",
+     looks: "The evidence graph \u2014 every record, every relationship",
+     happens: `A leak is a broken edge: ${sample.order.id} settled at
+       the gateway, and the bank never posted the UTR \u2014
+       <b class="num">${rupee(Math.abs(sample.delta_paise))}</b>
+       short.`,
+     why: "Naming the exact broken relationship is what makes a claim " +
+       "provable later."},
+    {kick: "INVESTIGATE", intro: "AI can investigate what might have " +
+       "happened \u2014 but its answer is still only a hypothesis.",
+     looks: "Read-only tools: orders, transactions, batches, UTRs, " +
+       "refunds, fee schedules",
+     happens: "A bounded investigator reads only what the tools return " +
+       "and proposes a cause, labeled UNVERIFIED.",
+     why: "The AI never touches money and never defines truth."},
+    {kick: "PROVE", intro: "Deterministic checks decide whether the " +
+       "numbers actually support the claim.",
+     looks: "Recomputed amounts \u00b7 contract rules \u00b7 " +
+       "record hashes",
+     happens: `The AI was wrong <b class="num">${r.variant_b.errors}</b>
+       times on the held-out benchmark.`,
+     why: `Errors that escaped containment:
+       <b class="num">${r.variant_b.escaped}</b>. That number is the
+       product.`},
+    {kick: "DECIDE", intro: "Not every leak is worth chasing.",
+     looks: "Eight admissibility gates \u00b7 counterparty economics " +
+       "\u00b7 deadlines",
+     happens: `<b class="num">${r.variant_c.packages}</b> claims filed
+       \u00b7 <b class="num">${r.variant_c.write_off}</b> written off
+       because pursuit costs more than return \u00b7
+       <b class="num">${r.variant_c.escalate}</b> sent to humans.`,
+     why: "Money owed is not the same as money worth pursuing."},
+    {kick: "RECOVER", intro: "Only cases that pass the required gates " +
+       "can reach the executor.",
+     looks: "Immutable action packages \u00b7 idempotency keys \u00b7 " +
+       "package hashes",
+     happens: "One execution per exception \u2014 ever \u2014 across " +
+       "retries, timeouts and duplicates.",
+     why: `Double executions so far:
+       <b class="num">${k.double_executions}</b>.`},
+    {kick: "VERIFY", intro: "After an action, Trace checks what " +
+       "actually happened.",
+     looks: "Counterparty responses \u00b7 the recovery ledger \u00b7 " +
+       "the audit chain",
+     happens: `Actual recovery, verified against the ledger:
+       <b class="num">${rupee(k.recovered_paise)}</b> gross,
+       <b class="num">${rupee(k.net_recovered_paise)}</b> net.`,
+     why: "Recovered means reconciled to the paisa, not claimed."},
+    {kick: "LEARN", intro: "Repeated leaks reveal patterns.",
+     looks: "Clusters by leak type and counterparty",
+     happens: "Patterns are proposed by AI and confirmed only when they " +
+       "survive deterministic challenge \u2014 false patterns are " +
+       "rejected, not shipped.",
+     why: "One systemic cause explains dozens of individual leaks."},
+    {kick: "PREVENT", intro: "The goal is not just to recover " +
+       "yesterday's money. It is to stop tomorrow's leak.",
+     looks: "Confirmed root causes \u00b7 recurrence rates \u00b7 " +
+       "mitigation costs",
+     happens: `Fixing the causes is worth an <span class="est">estimated
+       <b class="num">${rupee(k.estimated_preventable_paise)}</b></span>
+       in future leakage.`,
+     why: "Labeled ESTIMATED \u2014 never added to actual recovery."}];
+  $("#story").innerHTML = BEATS.map((b, i) => `
     <div class="beat"><div class="card-story">
       <span class="chapter">${String(i + 1).padStart(2, "0")}</span>
-      <span class="kick">${kick}</span><p>${wordize(text)}</p>
+      <span class="kick">${b.kick}</span>
+      <p>${wordize(b.intro)}</p>
+      <div class="facts">
+        <div><span class="flab">WHAT TRACE LOOKS AT</span>
+          <span class="fval">${b.looks}</span></div>
+        <div><span class="flab">WHAT HAPPENS</span>
+          <span class="fval">${b.happens}</span></div>
+        <div><span class="flab">WHY IT MATTERS</span>
+          <span class="fval">${b.why}</span></div>
+      </div>
       <div class="rulebar"></div>
     </div></div>`).join("");
   $("#rail").innerHTML = LIFECYCLE.map((s, i) =>
@@ -266,13 +320,19 @@ async function detail(id, ev) {
    </div><div class="body">
    <button class="close" id="closeov">CLOSE \u2715</button>
    <h2>${id}</h2>
-   <div class="seq">${["CASE IDENTIFIED", "RECORDS LOADED",
-     "EVIDENCE RETRIEVED", "DISCREPANCY PROVED", "POLICY DECISION"]
+   <div class="seq">${["CASE IDENTIFIED", "RECORDS LOADED", "RECONCILING",
+     "EVIDENCE FOUND", "DISCREPANCY CONFIRMED"]
      .map((s) => `<span>${s}</span>`).join("<i></i>")}</div>
    <div class="dossier">
      <div><div class="lab">CASE</div>
        <div class="val">${id.replace("exc_", "").toUpperCase()
          .slice(0, 18)}</div></div>
+     <div><div class="lab">ORDER ID</div>
+       <div class="val">${d.discrepancy.order_id}</div></div>
+     <div><div class="lab">GATEWAY / TRANSACTION</div>
+       <div class="val">${Object.values(d.evidence_graph.nodes)
+         .find((n) => n.table === "gateway_txns")?.id || "\u2014"}
+       </div></div>
      <div><div class="lab">STATUS</div>
        <div class="val">${d.case.state}</div></div>
      <div><div class="lab">TYPE</div>
@@ -360,8 +420,12 @@ async function detail(id, ev) {
    <p class="mono">disabled actions show the machine reason on hover \u2014
      enforcement is server-side, the UI only reflects it</p>
    </div></div></div>`;
-  const closeFile = () => { ov.hidden = true;
-    document.body.style.overflow = ""; document.onkeydown = null; };
+  const closeFile = () => {
+    ov.classList.add("closing");
+    setTimeout(() => { ov.hidden = true; ov.classList.remove("closing");
+      document.body.style.overflow = ""; document.onkeydown = null;
+    }, REDUCED ? 0 : 200);            // overlay is fixed: scroll intact
+  };
   $("#closeov").addEventListener("click", closeFile);
   ov.addEventListener("click", (e) => { if (e.target === ov) closeFile(); });
   document.onkeydown = (e) => { if (e.key === "Escape") closeFile(); };

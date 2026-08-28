@@ -484,3 +484,22 @@ text-align:left;font:700 8.5px var(--mono);letter-spacing:.14em}
 .progress-rail .stage:focus-visible{outline:2px solid var(--brass);
 outline-offset:2px}
 #count{color:var(--soft);align-self:center;padding-bottom:8px}
+
+/* T10.7 — structured story facts + animated close */
+.facts{display:grid;grid-template-columns:repeat(auto-fit,
+minmax(220px,1fr));gap:1px;background:var(--rule);
+border:1px solid var(--rule);margin-top:22px}
+.facts>div{background:var(--panel);padding:12px 14px;opacity:0;
+transform:translateY(10px);transition:opacity .5s ease,transform .5s ease}
+.beat.on .facts>div{opacity:1;transform:none}
+.beat.on .facts>div:nth-child(2){transition-delay:.12s}
+.beat.on .facts>div:nth-child(3){transition-delay:.24s}
+.flab{display:block;font:700 8.5px var(--mono);letter-spacing:.2em;
+color:var(--brass);margin-bottom:5px}
+.fval{font:13.5px/1.55 var(--serif)}
+.beat p{font:clamp(24px,3.6vw,42px)/1.28 var(--serif)}
+.overlay.closing .file{animation:closefile .2s ease forwards}
+@keyframes closefile{to{transform:scale(.94);opacity:0}}
+@media (prefers-reduced-motion: reduce){
+ .facts>div{opacity:1;transform:none;transition:none}
+ .overlay.closing .file{animation:none}}
