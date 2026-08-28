@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- TRACE favicon: the T is the money trail; the stem breaks and a
+       brass node marks the leak, found. -->
+  <rect width="64" height="64" rx="14" fill="#2E4023"/>
+  <rect x="14" y="14" width="36" height="7" rx="3.5" fill="#F3F1DF"/>
+  <rect x="28.5" y="21" width="7" height="16" rx="3.5" fill="#F3F1DF"/>
+  <!-- the break -->
+  <circle cx="32" cy="43.5" r="4.6" fill="#C9963F"/>
+  <rect x="28.5" y="49" width="7" height="6" rx="3" fill="#F3F1DF"
+        opacity=".55"/>
+</svg>
