@@ -120,7 +120,10 @@ class TestCockpit(Base):
                        "prefers-reduced-motion", "countUp",
                        '"/clusters"', '"/evaluation"', "wordize",
                        "moneyFlow", "brokenEdge", "Escape",
-                       "CASE IDENTIFIED", "ESCAPED"):
+                       "CASE IDENTIFIED", "ESCAPED",
+                       "AI was allowed to fail", "never merged",
+                       "NOT A PRODUCTION FINANCIAL PRODUCT",
+                       "AUDIT VERIFIED", "aria-label"):
             self.assertIn(needle, js + css)
         self.assertIn("id=\"story\"", html)
         self.assertIn("Root Causes", html)

@@ -384,3 +384,94 @@ transition:opacity .35s ease,transform .35s ease,background .15s}
  .file{animation:none !important}
  .stagewrap>*,.tl li,.seq span{opacity:1;transform:none}
  .case .meta{max-height:20px}}
+
+/* ============ T10.5 — final polish ============ */
+/* chapter number slide-in + subtle parallax vars */
+.beat .chapter{display:inline-block;opacity:0;transform:translateX(-14px);
+transition:opacity .5s ease,transform .5s ease}
+.beat.on .chapter{opacity:1;transform:none}
+body::before{transform:translateY(calc(var(--scroll,0)*-0.06px))}
+#hero::before{content:"TRACE";position:absolute;z-index:-1;
+font:700 34vw/1 var(--serif);color:var(--rule);opacity:.16;
+transform:translateY(calc(var(--scroll,0)*0.1px));pointer-events:none}
+#hero{position:relative;overflow:hidden}
+
+/* buttons: glow, sweep, press */
+.btn{position:relative;overflow:hidden;
+transition:box-shadow .2s,transform .08s}
+.btn:hover{box-shadow:0 0 0 3px color-mix(in srgb,var(--forest) 18%,
+transparent)}
+.btn::after{content:"";position:absolute;top:0;bottom:0;width:40px;
+left:-60%;background:linear-gradient(100deg,transparent,
+rgba(255,255,255,.25),transparent);transform:skewX(-14deg)}
+.btn:hover::after{animation:cardsweep .7s ease}
+.btn:active{transform:scale(.96)}
+.btn:focus-visible,.filters button:focus-visible,#search:focus-visible{
+outline:2px solid var(--brass);outline-offset:2px}
+
+/* system status chip */
+#sysstate{font:700 10px var(--mono);letter-spacing:.14em;
+border:1px solid var(--rule);border-radius:999px;padding:3px 11px;
+background:var(--okbg);color:var(--ok);transition:background .3s,color .3s}
+#sysstate.busy{background:var(--warnbg);color:var(--warn)}
+
+/* live stream entrance */
+#stream li{transition:background .6s ease}
+#stream li.new{animation:streamin .6s ease}
+@keyframes streamin{from{opacity:0;transform:translateY(-6px);
+background:var(--warnbg)}to{background:transparent}}
+
+/* timeline active glow */
+.tl li:hover::before{box-shadow:0 0 0 4px var(--okbg)}
+
+/* benchmark wall */
+.bench{background:var(--deep);color:var(--panel);padding:34px 30px;
+margin:0 0 20px;border-radius:3px}
+.bench .lead{font:clamp(20px,3vw,30px)/1.3 var(--serif);max-width:640px}
+.bench .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+background:rgba(255,255,255,.12);margin:22px 0;border:1px solid
+rgba(255,255,255,.12)}
+.bench .trio div{background:var(--deep);padding:16px;text-align:center}
+.bench .trio .v{font:700 clamp(34px,5vw,58px)/1 var(--serif);
+color:#D9E3C8;font-variant-numeric:tabular-nums}
+.bench .trio .escaped .v{color:#F0C9A0}
+.bench .trio .k{font:700 9px var(--mono);letter-spacing:.2em;
+color:rgba(255,255,255,.55);margin-top:8px}
+.bench .stats{display:grid;grid-template-columns:repeat(auto-fit,
+minmax(140px,1fr));gap:14px;font:11px var(--mono);
+color:rgba(255,255,255,.75)}
+.bench .stats b{display:block;font:700 17px var(--serif);color:var(--panel)}
+.bench .note{font:11px var(--mono);color:rgba(255,255,255,.55);
+margin-top:16px}
+
+/* actual vs estimated explainer */
+.ae-note{font:12.5px var(--serif);color:var(--soft);
+border-left:3px solid var(--brass);padding:6px 10px;margin:8px 0 18px}
+
+/* architecture progression */
+.arch{display:grid;gap:0;margin-bottom:8px}
+.arch .stage-t{display:grid;grid-template-columns:70px 1fr;gap:14px;
+padding:11px 0;border-bottom:1px dotted var(--rule);opacity:0;
+transform:translateY(10px);transition:opacity .5s ease,transform .5s ease}
+.arch .stage-t.on{opacity:1;transform:none}
+.arch .tnum{font:700 15px var(--mono);color:var(--brass)}
+.arch .tname{font:700 15px var(--serif)}
+.arch .tdesc{font:11.5px var(--mono);color:var(--soft)}
+.arch .stage-t.star{background:linear-gradient(90deg,var(--okbg),
+transparent);border-left:4px solid var(--forest);padding-left:10px}
+
+/* footer */
+footer{margin-top:60px;padding:44px 0 30px;border-top:1px solid
+var(--rule);text-align:center}
+footer .fw{font:700 40px var(--serif);letter-spacing:.05em}
+footer .fd{font:700 11px var(--mono);letter-spacing:.2em;
+color:var(--forest);margin:12px 0 20px}
+footer .flags{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+footer .flags span{font:700 9.5px var(--mono);letter-spacing:.12em;
+border:1px solid var(--rule);border-radius:999px;padding:4px 12px;
+color:var(--soft);background:var(--panel)}
+
+@media (prefers-reduced-motion: reduce){
+ body::before,#hero::before{transform:none !important}
+ #stream li.new,.btn:hover::after{animation:none !important}
+ .beat .chapter,.arch .stage-t{opacity:1;transform:none}}

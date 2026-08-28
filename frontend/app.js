@@ -47,10 +47,19 @@ async function hero() {
   document.querySelector("main").prepend(el);
   const boots = [...el.querySelectorAll(".boot")];
   boots.forEach((b, i) => setTimeout(() => b.classList.add("on"),
-    REDUCED ? 0 : 350 + i * 520));
+    REDUCED ? 0 : 200 + i * 300));
   const sweep = document.createElement("div");
   sweep.className = "sweep";
   document.body.appendChild(sweep);
+  if (!REDUCED) {
+    let ticking = false;
+    addEventListener("scroll", () => {
+      if (!ticking) requestAnimationFrame(() => {
+        document.body.style.setProperty("--scroll", scrollY);
+        ticking = false;
+      }), ticking = true;
+    }, { passive: true });
+  }
 }
 
 /* ---------- the Overview story: ten beats, real numbers ---------- */
@@ -208,6 +217,8 @@ function drawCards() {
   const cardEls = [...document.querySelectorAll(".case")];
   cardEls.forEach((c, i) => {
     c.style.transitionDelay = REDUCED ? "0s" : `${(i % 6) * 70}ms`;
+    c.setAttribute("role", "button");
+    c.setAttribute("aria-label", "Open case " + c.dataset.id);
     c.addEventListener("click", (ev) => detail(c.dataset.id, ev));
     c.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") detail(c.dataset.id, ev);
@@ -428,7 +439,42 @@ async function evaluation() {
     ["Preventable (ESTIMATED)",
      result.variant_d.estimated_preventable_paise, "est"]];
   const wmax = Math.max(...WF.map((x) => x[1]));
-  const wfHtml = `<div class="wf-money">${WF.map(([n, v, cls]) =>
+  const b = result.variant_b, c = result.variant_c;
+  const wd = result.variant_d.waterfall;
+  const wall = `<div class="bench">
+    <div class="lead">AI was allowed to fail \u2014 and the system
+      remained safe.</div>
+    <div class="trio">
+      <div><div class="v" data-n="${b.errors}">0</div>
+        <div class="k">AI ERRORS</div></div>
+      <div><div class="v" data-n="${b.contained}">0</div>
+        <div class="k">CONTAINED</div></div>
+      <div class="escaped"><div class="v" data-n="${b.escaped}">
+        ${b.escaped}</div><div class="k">ESCAPED</div></div>
+    </div>
+    <div class="stats">
+      <span><b data-n="${result.cases}">0</b>hidden leak cases</span>
+      <span><b>${(result.variant_a.leak_recall * 100).toFixed(0)}% /
+        ${(result.variant_a.leak_precision * 100).toFixed(0)}%</b>
+        recall / precision</span>
+      <span><b data-n="${c.packages}">0</b>claims filed</span>
+      <span><b data-n="${c.write_off}">0</b>written off</span>
+      <span><b data-n="${c.escalate}">0</b>escalated</span>
+      <span><b>${rupee(wd.recovered_paise)}</b>recovered gross
+        (ACTUAL)</span>
+      <span><b>${rupee(wd.net_recovered_paise)}</b>recovered net
+        (ACTUAL)</span>
+      <span><b>${rupee(result.variant_d.estimated_preventable_paise)}</b>
+        prevented (ESTIMATED)</span>
+    </div>
+    <div class="note">held-out benchmark \u00b7 integrity
+      ${result.integrity.status} \u00b7 all figures live from the
+      evaluation artifact</div>
+  </div>
+  <p class="ae-note">Estimated prevention is intentionally never merged
+    with actual recovered money \u2014 a core Trace design
+    principle.</p>`;
+  const wfHtml = wall + `<div class="wf-money">${WF.map(([n, v, cls]) =>
     `<div class="row"><span>${n}</span>
      <span class="bar ${cls}"><i data-w="${(v / wmax * 100).toFixed(1)}">
      </i></span><span>${rupee(v)}</span></div>`).join("")}</div>`;
@@ -443,9 +489,18 @@ async function evaluation() {
       ${result.evaluation_result_hash.slice(0, 16)}\u2026</p>`;
   const bars = document.querySelectorAll("#evaluation .bar i");
   observe([$("#evaluation")], "on");
-  $("#evaluation").addEventListener("revealed", () =>
-    bars.forEach((i) => i.style.width = i.dataset.w + "%"));
-  if (REDUCED) bars.forEach((i) => i.style.width = i.dataset.w + "%");
+  const counters = document.querySelectorAll("#evaluation [data-n]");
+  $("#evaluation").addEventListener("revealed", () => {
+    bars.forEach((i) => i.style.width = i.dataset.w + "%");
+    counters.forEach((el) => countUp(el, +el.dataset.n,
+      (x) => x.toLocaleString("en-IN")));
+  });
+  if (REDUCED) {
+    bars.forEach((i) => i.style.width = i.dataset.w + "%");
+    counters.forEach((el) =>
+      el.textContent = (+el.dataset.n).toLocaleString("en-IN"));
+  }
+  architecture(); footer();
 }
 
 function moneyFlow(d) {
@@ -487,18 +542,76 @@ function brokenEdge(d) {
       : ""}</div>`;
 }
 
+const STAGES_T = [["T1", "Financial world",
+  "5,000 seeded orders, immutable record hashes, frozen ground truth"],
+ ["T2", "Deterministic reconciliation",
+  "the foundation \u2014 typed match states, paisa-exact discrepancies"],
+ ["T3", "Lifecycle", "temporal state machine, WAIT semantics, SLA clocks"],
+ ["T4", "Evidence graphs", "a leak is a broken edge; tamper-evident audit"],
+ ["T5", "Fallible AI", "bounded investigator + containment validation"],
+ ["T6", "Policy + gates", "eight admissibility gates, EV decisions, the "
+  + "write-off stopping rule"],
+ ["T7", "Executor", "idempotent, one execution per exception, ever"],
+ ["T8", "Prevention", "root-cause clusters, false patterns rejected"],
+ ["T9", "Benchmark", "four-way ablation; caught its own blind spot"],
+ ["T10", "Reconciliation cockpit", "this interface"],
+ ["T11", "Roles + story", "security boundaries, the honest numbers"]];
+function architecture() {
+  if (document.querySelector(".arch")) return;
+  const sec = document.createElement("section");
+  sec.innerHTML = `<h2 class="sechead">Architecture \u2014 eleven
+    stages, one doctrine</h2><div class="arch">
+    ${STAGES_T.map(([n, name, desc]) => `
+      <div class="stage-t ${n === "T2" ? "star" : ""}">
+        <span class="tnum">${n}</span>
+        <span><span class="tname">${name}</span><br>
+          <span class="tdesc">${desc}</span></span>
+      </div>`).join("")}</div>`;
+  $("#auditsec").before(sec);
+  const rows = [...sec.querySelectorAll(".stage-t")];
+  rows.forEach((r, i) =>
+    r.style.transitionDelay = REDUCED ? "0s" : `${i * 70}ms`);
+  if (REDUCED) rows.forEach((r) => r.classList.add("on"));
+  else observe(rows, "on");
+}
+function footer() {
+  if (document.querySelector("footer")) return;
+  const f = document.createElement("footer");
+  f.innerHTML = `<div class="fw">TRACE</div>
+    <div class="fd">AI INVESTIGATES. SYSTEMS PROVE. POLICY DECIDES.
+      EXECUTOR ACTS.</div>
+    <div class="flags"><span>SIMULATED WORLD</span>
+      <span>STUDENT PROJECT</span>
+      <span>ARCHITECTURE DEMONSTRATION</span>
+      <span>NOT A PRODUCTION FINANCIAL PRODUCT</span></div>`;
+  document.querySelector("main").appendChild(f);
+}
+
+let LAST_SEQ = -1;
 async function stream() {
   const { events } = await api("/stream?n=30");
   $("#stream").innerHTML = events.slice().reverse().map((e) =>
-    `<li>#${e.seq} \u00b7 ${e.event_type} \u00b7 ${e.case_id}</li>`)
+    `<li class="${e.seq > LAST_SEQ && LAST_SEQ >= 0 ? "new" : ""}">
+     #${e.seq} \u00b7 ${e.event_type} \u00b7 ${e.case_id}</li>`)
     .join("");
+  LAST_SEQ = Math.max(LAST_SEQ, ...events.map((e) => e.seq));
 }
 
+const sys = document.createElement("span");
+sys.id = "sysstate"; sys.textContent = "SYSTEM READY";
+document.querySelector(".top-right").prepend(sys);
 $("#verify").addEventListener("click", async () => {
-  const v = await api("/audit/verify");
+  sys.className = "busy";
+  sys.textContent = "VERIFYING\u2026";
+  const vp = api("/audit/verify");            // the REAL endpoint
+  if (!REDUCED) await new Promise((r) => setTimeout(r, 350));
+  sys.textContent = "CHECKING HASHES\u2026";
+  const v = await vp;
   const msg = v.valid
     ? `\u2713 ${v.events} events verified \u00b7 no mutation detected`
     : `\u2717 first invalid at #${v.first_invalid_seq}`;
+  sys.className = v.valid ? "" : "busy";
+  sys.textContent = v.valid ? "AUDIT VERIFIED" : "AUDIT INVALID";
   $("#chainstate").textContent = msg;
   $("#auditsum").textContent = msg;
 });
