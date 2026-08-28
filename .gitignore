@@ -1,3 +1,5 @@
 __pycache__/
 *.db
-data/ground_truth.json
+data/*
+!data/precomputed/
+!data/precomputed/**ground_truth.json

@@ -1,0 +1,6 @@
+backend/tests/
+backend/app/world.py
+data/world.json
+data/ground_truth.json
+*.zip
+__pycache__/
