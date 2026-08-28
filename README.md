@@ -41,13 +41,13 @@ investigator + containment · T6 eight-gate admissibility + EV decisions +
 the write-off stopping rule · T7 counterparty simulation + idempotent
 executor · T8 clustering + prevention (ACTUAL vs ESTIMATED, never merged)
 · T9 four-way ablation, integrity-gated benchmark — which caught a real
-containment escape and forced the fix · T10 the reconciliation cockpit ·
+containment escape and forced the fix · T10 the reconciliation cockpit (now a cinematic case-file experience: scroll-story chapters, card-grid cases with search, overlay dossiers, money waterfall) ·
 T11 roles + this story.
 
 ## Run it
 ```bash
 python3 -c "import sys; sys.path.insert(0,'backend'); from app.world import generate; generate(seed=42, out_dir='data')"
-cd backend && python3 -m unittest discover -s tests && cd ..   # 101 green, ~60s
+cd backend && python3 -m unittest discover -s tests && cd ..   # 102 green, ~40s
 python3 scripts/serve.py    # cockpit -> http://localhost:8000 (startup ~60s)
 ```
 
