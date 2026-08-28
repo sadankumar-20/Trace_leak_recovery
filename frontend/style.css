@@ -454,18 +454,6 @@ margin-top:16px}
 .ae-note{font:12.5px var(--serif);color:var(--soft);
 border-left:3px solid var(--brass);padding:6px 10px;margin:8px 0 18px}
 
-/* architecture progression */
-.arch{display:grid;gap:0;margin-bottom:8px}
-.arch .stage-t{display:grid;grid-template-columns:70px 1fr;gap:14px;
-padding:11px 0;border-bottom:1px dotted var(--rule);opacity:0;
-transform:translateY(10px);transition:opacity .5s ease,transform .5s ease}
-.arch .stage-t.on{opacity:1;transform:none}
-.arch .tnum{font:700 15px var(--mono);color:var(--brass)}
-.arch .tname{font:700 15px var(--serif)}
-.arch .tdesc{font:11.5px var(--mono);color:var(--soft)}
-.arch .stage-t.star{background:linear-gradient(90deg,var(--okbg),
-transparent);border-left:4px solid var(--forest);padding-left:10px}
-
 /* footer */
 footer{margin-top:60px;padding:44px 0 30px;border-top:1px solid
 var(--rule);text-align:center}
@@ -480,7 +468,7 @@ color:var(--soft);background:var(--panel)}
 @media (prefers-reduced-motion: reduce){
  body::before,#hero::before{transform:none !important}
  #stream li.new,.btn:hover::after{animation:none !important}
- .beat .chapter,.arch .stage-t{opacity:1;transform:none}}
+ .beat .chapter{opacity:1;transform:none}}
 
 /* T10.6 interaction fixes */
 .tabs a.active{color:var(--forest);border-color:var(--brass)}
