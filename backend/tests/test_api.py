@@ -130,10 +130,11 @@ class TestCockpit(Base):
         # reduced-motion path disables animation and un-sticks beats
         self.assertIn("transition:none !important", css)
         # no hardcoded financial values (>=4 digit literals, excluding
-        # unicode escapes and the 5000ms poll interval)
+        # unicode escapes and the millisecond timer intervals: the 5000ms
+        # stream poll and the 1000ms live-clock tick)
         import re
         clean = re.sub(r"\\u[0-9a-fA-F]{4}", "", js)
-        nums = set(re.findall(r"\b\d{4,}\b", clean)) - {"5000"}
+        nums = set(re.findall(r"\b\d{4,}\b", clean)) - {"5000", "1000"}
         self.assertEqual(nums, set(), nums)
 
 

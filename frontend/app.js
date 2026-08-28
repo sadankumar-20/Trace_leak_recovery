@@ -37,7 +37,8 @@ async function hero() {
   el.innerHTML = `
    <div class="boot wordmark">TRACE<span>.</span></div>
    <div class="boot sys">SYSTEM ONLINE \u00b7 <b>${h.exceptions}</b>
-     EXCEPTIONS UNDER INVESTIGATION \u00b7 CLOCK ${h.clock} \u00b7
+     EXCEPTIONS UNDER INVESTIGATION \u00b7 CLOCK
+     <span id="liveclock"></span> \u00b7
      ${h.mode.toUpperCase()}</div>
    <div class="boot tag">Find the money that disappeared between payment
      and settlement.</div>
@@ -45,6 +46,20 @@ async function hero() {
      POLICY DECIDES<i></i>THE EXECUTOR ACTS</div>
    <div class="boot down">\u2193</div>`;
   document.querySelector("main").prepend(el);
+  const tick = () => {
+    const n = new Date();
+    const d = n.toLocaleDateString("en-GB",
+      { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
+    const tm = n.toLocaleTimeString("en-US",
+      { hour: "2-digit", minute: "2-digit", second: "2-digit",
+        hour12: true });
+    const c = $("#liveclock");
+    if (c) c.textContent = `${d} \u00b7 ${tm}`;
+  };
+  tick();
+  setInterval(tick, 1000);   // hero stays in the DOM through dossier
+                             // open/close, scroll and filters — the
+                             // interval keeps ticking throughout
   const boots = [...el.querySelectorAll(".boot")];
   boots.forEach((b, i) => setTimeout(() => b.classList.add("on"),
     REDUCED ? 0 : 200 + i * 300));
