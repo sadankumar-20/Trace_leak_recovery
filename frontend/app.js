@@ -607,7 +607,7 @@ async function evaluation() {
     counters.forEach((el) =>
       el.textContent = (+el.dataset.n).toLocaleString("en-IN"));
   }
-  architecture(); footer();
+  footer();
 }
 
 function moneyFlow(d) {
@@ -649,38 +649,6 @@ function brokenEdge(d) {
       : ""}</div>`;
 }
 
-const STAGES_T = [["T1", "Financial world",
-  "5,000 seeded orders, immutable record hashes, frozen ground truth"],
- ["T2", "Deterministic reconciliation",
-  "the foundation \u2014 typed match states, paisa-exact discrepancies"],
- ["T3", "Lifecycle", "temporal state machine, WAIT semantics, SLA clocks"],
- ["T4", "Evidence graphs", "a leak is a broken edge; tamper-evident audit"],
- ["T5", "Fallible AI", "bounded investigator + containment validation"],
- ["T6", "Policy + gates", "eight admissibility gates, EV decisions, the "
-  + "write-off stopping rule"],
- ["T7", "Executor", "idempotent, one execution per exception, ever"],
- ["T8", "Prevention", "root-cause clusters, false patterns rejected"],
- ["T9", "Benchmark", "four-way ablation; caught its own blind spot"],
- ["T10", "Reconciliation cockpit", "this interface"],
- ["T11", "Roles + story", "security boundaries, the honest numbers"]];
-function architecture() {
-  if (document.querySelector(".arch")) return;
-  const sec = document.createElement("section");
-  sec.innerHTML = `<h2 class="sechead">Architecture \u2014 eleven
-    stages, one doctrine</h2><div class="arch">
-    ${STAGES_T.map(([n, name, desc]) => `
-      <div class="stage-t ${n === "T2" ? "star" : ""}">
-        <span class="tnum">${n}</span>
-        <span><span class="tname">${name}</span><br>
-          <span class="tdesc">${desc}</span></span>
-      </div>`).join("")}</div>`;
-  $("#auditsec").before(sec);
-  const rows = [...sec.querySelectorAll(".stage-t")];
-  rows.forEach((r, i) =>
-    r.style.transitionDelay = REDUCED ? "0s" : `${i * 70}ms`);
-  if (REDUCED) rows.forEach((r) => r.classList.add("on"));
-  else observe(rows, "on");
-}
 function footer() {
   if (document.querySelector("footer")) return;
   const f = document.createElement("footer");
