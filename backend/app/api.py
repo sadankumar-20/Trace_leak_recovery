@@ -149,6 +149,7 @@ def create_app(data_dir: str | Path,
                          "delta_paise": e["delta_paise"],
                          "decision":
                              st["decisions"][eid]["selected_action"],
+                         "evidence": st["verdicts"][eid]["result"],
                          "state": st["cases"][eid].state,
                          "deadline": e["claim_deadline"]})
         return jsonify({"exceptions": rows})

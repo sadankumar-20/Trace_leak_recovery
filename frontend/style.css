@@ -282,3 +282,105 @@ color:var(--soft)}
  .case.on .delta,.case.on .ledger3::after{animation:none}
  .case .ledger3::after{transform:scaleX(1)}}
 @media (max-width:900px){.sweep{display:none}}
+
+/* ============ T10.4 — interactive investigation layer ============ */
+/* card hover: sweep, glow border, value emphasis, pulsing status */
+.case{position:relative;overflow:hidden}
+.case::after{content:"";position:absolute;top:0;bottom:0;width:60px;
+left:-40%;background:linear-gradient(100deg,transparent,
+color-mix(in srgb,var(--brass) 22%,transparent),transparent);
+transform:skewX(-12deg);opacity:0;transition:opacity .2s}
+.case:hover::after{opacity:1;animation:cardsweep .8s ease}
+@keyframes cardsweep{from{left:-40%}to{left:120%}}
+.case:hover{border-color:var(--brass)}
+.case:hover .delta{transform:scale(1.06)}
+.case .delta{transition:transform .2s ease}
+.case .meta{font:9.5px var(--mono);color:var(--soft);max-height:0;
+overflow:hidden;transition:max-height .25s ease,margin .25s ease}
+.case:hover .meta,.case:focus-visible .meta{max-height:20px;
+margin-top:6px}
+.case:focus-visible{outline:2px solid var(--forest)}
+.chip.SUPPORTED{background:var(--okbg);color:var(--ok)}
+.chip.CONTAINED,.chip.INSUFFICIENT_EVIDENCE{background:var(--warnbg);
+color:var(--warn)}
+.case .dot{display:inline-block;width:7px;height:7px;border-radius:50%;
+background:var(--bad);margin-right:5px;animation:blip 2.4s ease infinite}
+@keyframes blip{50%{opacity:.35;transform:scale(.85)}}
+
+/* containment strip above the grid */
+.contain{display:flex;gap:22px;align-items:baseline;background:var(--deep);
+color:var(--panel);padding:12px 18px;margin:14px 0;border-radius:3px;
+font:700 11px var(--mono);letter-spacing:.12em}
+.contain b{font:700 22px var(--serif);color:#D9E3C8;margin-left:6px}
+.contain .escaped b{color:#F0C9A0;font-size:26px}
+
+/* case opening: sequence strip + staged body reveal */
+.file{transform-origin:var(--ox,50%) var(--oy,20%);
+animation:openfile .32s cubic-bezier(.2,.8,.3,1)}
+@keyframes openfile{from{transform:scale(.5);opacity:0}}
+.seq{display:flex;gap:0;flex-wrap:wrap;font:700 8.5px var(--mono);
+letter-spacing:.14em;color:var(--soft);margin:2px 0 8px}
+.seq span{opacity:.3;transition:opacity .25s,color .25s}
+.seq span.lit{opacity:1;color:var(--forest)}
+.seq i{width:16px;height:1px;background:var(--rule);margin:auto 8px}
+.stagewrap>*{opacity:0;transform:translateY(8px);
+transition:opacity .4s ease,transform .4s ease}
+.stagewrap.go>*{opacity:1;transform:none}
+
+/* financial reconciliation block */
+.finrec{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;
+background:var(--rule);border:1px solid var(--rule);margin:10px 0}
+.finrec div{background:var(--panel);padding:10px 12px}
+.finrec .lab{font:700 8.5px var(--mono);letter-spacing:.18em;
+color:var(--soft)}
+.finrec .val{font:700 20px var(--serif);font-variant-numeric:tabular-nums}
+.finrec .neg{color:var(--bad)}
+
+/* per-case money flow with flowing light + break */
+.flow{display:flex;flex-direction:column;gap:0;margin:8px 0}
+.flow .stage{display:flex;justify-content:space-between;
+font:11px var(--mono);background:var(--panel2);
+border:1px solid var(--rule);padding:7px 10px}
+.flow .pipe{width:2px;height:20px;margin-left:26px;position:relative;
+background:var(--rule);overflow:hidden}
+.flow .pipe::after{content:"";position:absolute;left:0;right:0;height:8px;
+background:var(--forest);animation:flowdown 1.4s linear infinite}
+@keyframes flowdown{from{top:-8px}to{top:100%}}
+.flow .pipe.broken{background:repeating-linear-gradient(var(--bad) 0 3px,
+transparent 3px 7px)}
+.flow .pipe.broken::after{background:var(--bad);
+animation-duration:.9s}
+.flow .stage.leak{border-color:var(--bad);color:var(--bad);
+font-weight:700;box-shadow:0 0 0 1px var(--badbg)}
+
+/* broken-edge strip (reconciliation, not cybersecurity) */
+.edgeline{display:flex;align-items:center;gap:6px;font:700 9.5px
+var(--mono);letter-spacing:.08em;margin:10px 0;flex-wrap:wrap}
+.edgeline .n{border:1px solid var(--rule);background:var(--panel2);
+padding:5px 9px;border-radius:3px}
+.edgeline .e{flex:1;min-width:20px;height:2px;background:var(--forest)}
+.edgeline .e.x{background:repeating-linear-gradient(90deg,var(--bad) 0
+5px,transparent 5px 10px);position:relative;
+animation:glowamber 1.8s ease infinite}
+@keyframes glowamber{50%{filter:drop-shadow(0 0 4px var(--warn))}}
+.edgeline .xmark{color:var(--bad);font-weight:700}
+
+/* AI vs deterministic ladder */
+.ladder{display:grid;gap:0;font:11px var(--mono);margin-top:6px}
+.ladder .rung{display:flex;justify-content:space-between;padding:6px 9px;
+border:1px solid var(--rule);background:var(--panel2)}
+.ladder .rung.ai{border-left:4px solid var(--warn)}
+.ladder .rung.det{border-left:4px solid var(--forest)}
+.ladder .arrow{text-align:center;color:var(--soft);padding:1px 0}
+
+/* timeline: sequential entrance + hover */
+.tl li{opacity:0;transform:translateX(-6px);
+transition:opacity .35s ease,transform .35s ease,background .15s}
+.tl.go li{opacity:1;transform:none}
+.tl li:hover{background:var(--panel2)}
+
+@media (prefers-reduced-motion: reduce){
+ .case::after,.case .dot,.flow .pipe::after,.edgeline .e.x,
+ .file{animation:none !important}
+ .stagewrap>*,.tl li,.seq span{opacity:1;transform:none}
+ .case .meta{max-height:20px}}

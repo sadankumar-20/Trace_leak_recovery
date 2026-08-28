@@ -44,6 +44,9 @@ class TestCockpit(Base):
         for col in ("order", "gateway", "bank"):
             self.assertIn(col, r)
         self.assertIn("delta_paise", r)
+        # part 2: evidence status exposed from existing verdicts
+        self.assertIn(r["evidence"], ("SUPPORTED", "CONTAINED",
+                                      "REJECTED", "INSUFFICIENT_EVIDENCE"))
 
     def test_detail_has_graph_gates_labels_and_lineage(self):
         row = self.find(lambda r: r["decision"] == "FILE_GATEWAY_CLAIM")
@@ -115,7 +118,9 @@ class TestCockpit(Base):
         # story beats present and fed from APIs, not literals
         for needle in ("Money appears correct", "IntersectionObserver",
                        "prefers-reduced-motion", "countUp",
-                       '"/clusters"', '"/evaluation"', "wordize"):
+                       '"/clusters"', '"/evaluation"', "wordize",
+                       "moneyFlow", "brokenEdge", "Escape",
+                       "CASE IDENTIFIED", "ESCAPED"):
             self.assertIn(needle, js + css)
         self.assertIn("id=\"story\"", html)
         self.assertIn("Root Causes", html)

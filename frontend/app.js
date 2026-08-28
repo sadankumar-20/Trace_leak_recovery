@@ -157,10 +157,22 @@ async function kpis() {
 let ALL_CASES = [], FILTER = "all", QUERY = "";
 async function reconTable() {
   ALL_CASES = (await api("/exceptions")).exceptions;
+  if (!document.querySelector(".contain")) {
+    const b = (await api("/evaluation")).result.variant_b;
+    const strip = document.createElement("div");
+    strip.className = "contain";
+    strip.innerHTML = `<span>AI INVESTIGATION<b>${b.errors}</b> errors
+      </span><span>CONTAINED<b>${b.contained}</b></span>
+      <span class="escaped">ESCAPED<b>${b.escaped}</b></span>
+      <span style="opacity:.7">AI can be wrong \u2014 the architecture
+      keeps wrong AI output from becoming financial truth</span>`;
+    $("#cards").before(strip);
+  }
   const types = [...new Set(ALL_CASES.map((e) => e.type))].sort();
-  $("#filters").innerHTML = ["all", ...types].map((tp) =>
+  const decisions = [...new Set(ALL_CASES.map((e) => e.decision))].sort();
+  $("#filters").innerHTML = ["all", ...types, ...decisions].map((tp) =>
     `<button data-f="${tp}" class="${tp === FILTER ? "on" : ""}">
-     ${tp}</button>`).join("");
+     ${tp.replace(/_/g, " ")}</button>`).join("");
   document.querySelectorAll("#filters button").forEach((b) =>
     b.addEventListener("click", () => { FILTER = b.dataset.f;
       reconTable(); }));
@@ -170,11 +182,12 @@ async function reconTable() {
 }
 function drawCards() {
   const rows = ALL_CASES.filter((e) =>
-    (FILTER === "all" || e.type === FILTER)
-    && (!QUERY || `${e.order.id} ${e.exception_id} ${e.type}
-        ${e.decision}`.toLowerCase().includes(QUERY)));
+    (FILTER === "all" || e.type === FILTER || e.decision === FILTER)
+    && (!QUERY || `${e.order.id} ${e.exception_id} ${e.gateway.id}
+        ${e.type} ${e.decision} ${e.state}`
+        .toLowerCase().includes(QUERY)));
   $("#cards").innerHTML = rows.map((e) => `
-    <div class="case" data-id="${e.exception_id}">
+    <div class="case" tabindex="0" data-id="${e.exception_id}">
       <div class="head"><span class="oid">${e.order.id}</span>
         <span class="delta">\u2212${rupee(Math.abs(e.delta_paise))}</span>
       </div>
@@ -184,21 +197,28 @@ function drawCards() {
         <div class="short"><b>BANK</b>${rupee(e.bank.expected_paise)}
           \u2192 ${rupee(e.bank.actual_paise)}</div>
       </div>
-      <div class="foot"><span class="chip type">${e.type}</span>
-        <span class="chip warn">${e.decision}</span>
-        <span class="chip ok">${e.state}</span></div>
+      <div class="foot"><span class="chip type"><span class="dot">
+        </span>${e.type}</span>
+        <span class="chip warn">${e.decision.replace(/_/g, " ")}</span>
+        <span class="chip ${e.evidence}">${e.evidence}</span></div>
+      <div class="meta">${e.exception_id} \u00b7 ${e.gateway.id}
+        \u00b7 state ${e.state} \u00b7 deadline
+        ${e.deadline.slice(0, 10)}</div>
     </div>`).join("") || "<p class='mono'>no cases match</p>";
   const cardEls = [...document.querySelectorAll(".case")];
   cardEls.forEach((c, i) => {
     c.style.transitionDelay = REDUCED ? "0s" : `${(i % 6) * 70}ms`;
-    c.addEventListener("click", () => detail(c.dataset.id));
+    c.addEventListener("click", (ev) => detail(c.dataset.id, ev));
+    c.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") detail(c.dataset.id, ev);
+    });
   });
   if (REDUCED) cardEls.forEach((c) => c.classList.add("on"));
   else observe(cardEls, "on");
 }
 
 /* ---------- detail: interactive graph, animated gates, timeline ------- */
-async function detail(id) {
+async function detail(id, ev) {
   const d = await api("/exceptions/" + id);
   const g = d.evidence_graph;
   const gates = d.admissibility ? Object.entries(
@@ -215,12 +235,19 @@ async function detail(id) {
   const ov = $("#overlay");
   ov.hidden = false;
   document.body.style.overflow = "hidden";
+  if (ev) {
+    ov.style.setProperty("--ox", ev.clientX + "px");
+    ov.style.setProperty("--oy", ev.clientY + "px");
+  }
   ov.innerHTML = `<div class="file">
    <div class="rail2">${STEPS.map((s) =>
      `<div class="step ${hit.has(s) ? "hit" : ""}">${s}</div>`).join("")}
    </div><div class="body">
    <button class="close" id="closeov">CLOSE \u2715</button>
    <h2>${id}</h2>
+   <div class="seq">${["CASE IDENTIFIED", "RECORDS LOADED",
+     "EVIDENCE RETRIEVED", "DISCREPANCY PROVED", "POLICY DECISION"]
+     .map((s) => `<span>${s}</span>`).join("<i></i>")}</div>
    <div class="dossier">
      <div><div class="lab">CASE</div>
        <div class="val">${id.replace("exc_", "").toUpperCase()
@@ -240,7 +267,18 @@ async function detail(id) {
          ? "VERIFIED" : d.ai.verdict}</div></div>
    </div>
    <p class="sub">deadline ${d.discrepancy.claim_deadline}</p>
-   <div class="cols">
+   <div class="finrec">
+     <div><div class="lab">EXPECTED</div>
+       <div class="val">${rupee(d.discrepancy.expected_paise)}</div></div>
+     <div><div class="lab">ACTUAL</div>
+       <div class="val">${rupee(d.discrepancy.actual_paise)}</div></div>
+     <div><div class="lab">DELTA</div>
+       <div class="val neg">\u2212${rupee(Math.abs(
+         d.discrepancy.delta_paise))}</div></div>
+   </div>
+   ${moneyFlow(d)}
+   ${brokenEdge(d)}
+   <div class="stagewrap"><div class="cols">
     <div class="card"><h3>EVIDENCE GRAPH (${Object.keys(g.nodes).length}
       hash-verified nodes \u2014 click a node to trace its edges)</h3>
       ${Object.values(g.nodes).map((n) => `<div class="node"
@@ -257,7 +295,20 @@ async function detail(id) {
         <b>${d.ai.hypothesis.type}</b>
         (${rupee(d.ai.hypothesis.amount_paise)})</div>
       <p class="mono">tools: ${d.ai.tools_used.join(" \u2192 ")}</p>
-      <p class="mono">verdict: <b>${d.ai.verdict}</b></p></div>
+      <p class="mono">verdict: <b>${d.ai.verdict}</b></p>
+      <div class="ladder">
+        <div class="rung ai"><span>AI INVESTIGATOR</span>
+          <span>"hypothesis"</span></div>
+        <div class="arrow">\u2193</div>
+        <div class="rung det"><span>DETERMINISTIC EVIDENCE</span>
+          <span>"verified"</span></div>
+        <div class="arrow">\u2193</div>
+        <div class="rung det"><span>POLICY ENGINE</span>
+          <span>"decision"</span></div>
+        <div class="arrow">\u2193</div>
+        <div class="rung det"><span>BOUNDED EXECUTOR</span>
+          <span>"action"</span></div>
+      </div></div>
     <div class="card gates"><h3>ADMISSIBILITY \u2014 8 GATES</h3>
       ${gates}</div>
     <div class="card"><h3>DECISION &amp; ECONOMICS</h3>
@@ -287,13 +338,23 @@ async function detail(id) {
    </div>
    <p class="mono">disabled actions show the machine reason on hover \u2014
      enforcement is server-side, the UI only reflects it</p>
-   </div></div>`;
-  $("#closeov").addEventListener("click", () => {
-    ov.hidden = true; document.body.style.overflow = ""; });
-  ov.addEventListener("click", (e) => { if (e.target === ov) {
-    ov.hidden = true; document.body.style.overflow = ""; } });
-  requestAnimationFrame(() =>
-    ov.querySelector(".gates").classList.add("gates-on"));
+   </div></div></div>`;
+  const closeFile = () => { ov.hidden = true;
+    document.body.style.overflow = ""; document.onkeydown = null; };
+  $("#closeov").addEventListener("click", closeFile);
+  ov.addEventListener("click", (e) => { if (e.target === ov) closeFile(); });
+  document.onkeydown = (e) => { if (e.key === "Escape") closeFile(); };
+  $("#closeov").focus();
+  const seq = [...ov.querySelectorAll(".seq span")];
+  seq.forEach((s, i) => setTimeout(() => s.classList.add("lit"),
+    REDUCED ? 0 : 160 + i * 210));
+  setTimeout(() => {
+    ov.querySelector(".stagewrap").classList.add("go");
+    ov.querySelector(".gates").classList.add("gates-on");
+    ov.querySelector(".tl").classList.add("go");
+    ov.querySelectorAll(".tl li").forEach((li, i) =>
+      li.style.transitionDelay = REDUCED ? "0s" : `${i * 110}ms`);
+  }, REDUCED ? 0 : 420);
   document.querySelectorAll(".node").forEach((n) =>
     n.addEventListener("click", () => {
       const id = n.dataset.node;
@@ -385,6 +446,45 @@ async function evaluation() {
   $("#evaluation").addEventListener("revealed", () =>
     bars.forEach((i) => i.style.width = i.dataset.w + "%"));
   if (REDUCED) bars.forEach((i) => i.style.width = i.dataset.w + "%");
+}
+
+function moneyFlow(d) {
+  const leakStage = {missing_settlement: 3, fee_overcharge: 1,
+    double_refund: 1, duplicate_capture: 1, rounding_drift: 2,
+    partial_capture_mismatch: 2,
+    refund_marked_success_not_settled: 3}[
+    d.discrepancy.discrepancy_type] ?? 2;
+  const stages = [
+    ["CUSTOMER PAYMENT", d.evidence_graph.nodes &&
+      Object.values(d.evidence_graph.nodes).find((n) =>
+        n.table === "orders")?.amount_paise],
+    ["GATEWAY", Object.values(d.evidence_graph.nodes).find((n) =>
+        n.table === "gateway_txns")?.amount_paise],
+    ["EXPECTED SETTLEMENT", d.discrepancy.expected_paise],
+    ["ACTUAL BANK SETTLEMENT", d.discrepancy.actual_paise]];
+  return `<div class="flow">${stages.map(([n, v], i) => `
+    <div class="stage ${i === leakStage + 1 || (i === 3 &&
+      leakStage >= 2) ? "leak" : ""}"><span>${n}</span>
+      <span>${v != null ? rupee(v) : "\u2014"}</span></div>
+    ${i < 3 ? `<div class="pipe ${i >= leakStage ? "broken" : ""}">
+      </div>` : ""}`).join("")}
+    <div class="pipe ${leakStage < 4 ? "broken" : ""}"></div>
+    <div class="stage leak"><span>DISCREPANCY</span>
+      <span>\u2212${rupee(Math.abs(d.discrepancy.delta_paise))}
+      \u2192 ${d.decision.selected_action.replace(/_/g, " ")}</span>
+    </div></div>`;
+}
+function brokenEdge(d) {
+  const broken = d.evidence_graph.edges.some((e) => e.broken);
+  const nodes = ["ORDER", "GATEWAY", "SETTLEMENT", "BANK"];
+  return `<div class="edgeline">${nodes.map((n, i) => `
+    <span class="n">${n}</span>
+    ${i < 3 ? (i === 2 && broken ?
+      `<span class="e x"></span><span class="xmark">\u2715
+       POSTED_AS</span><span class="e x"></span>`
+      : `<span class="e"></span>`) : ""}`).join("")}
+    ${broken ? `<span class="chip EXCEPTION">EXCEPTION CREATED</span>`
+      : ""}</div>`;
 }
 
 async function stream() {
