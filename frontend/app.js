@@ -724,18 +724,30 @@ $("#verify").addEventListener("click", async () => {
   const first = document.querySelector(".tabs a");
   if (first) first.classList.add("active");          // fixes (3)
 })();
-(() => {  // active top-tab tracking
+function initTabTracking() {
+  // Attached ONLY after the initial renders complete (see bootstrap
+  // below). ROOT CAUSE of the flaky initial underline: these observers
+  // used to attach synchronously at parse time, when every section was
+  // still EMPTY — zero-height #rootcauses / #evalsec sat inside the
+  // first viewport's detection band, fired isIntersecting immediately,
+  // and overwrote the Overview default; WHICH one won depended on the
+  // async hero prepend shifting layout mid-paint, giving the
+  // nondeterministic Root Causes / Evaluation starts. With real
+  // geometry in place, only the section actually in the band (the
+  // story, at scroll 0) can assert itself.
   const tabs = [...document.querySelectorAll(".tabs a")];
-  const secs = tabs.map((a) => document.querySelector(a.hash));
-  new IntersectionObserver((es) => es.forEach((e) => {
-    if (e.isIntersecting) tabs.forEach((a) =>
-      a.classList.toggle("active", a.hash === "#" + e.target.id));
-  }), { rootMargin: "-40% 0px -55% 0px" })
-    .constructor && secs.forEach((s, i) => s &&
-      new IntersectionObserver((es) => es.forEach((e) => {
-        if (e.isIntersecting) tabs.forEach((a) =>
-          a.classList.toggle("active", a === tabs[i]));
-      }), { rootMargin: "-30% 0px -60% 0px" }).observe(s));
+  tabs.forEach((a, i) => {
+    const s = document.querySelector(a.hash);
+    if (!s) return;
+    new IntersectionObserver((es) => es.forEach((e) => {
+      if (e.isIntersecting) tabs.forEach((x) =>
+        x.classList.toggle("active", x === tabs[i]));
+    }), { rootMargin: "-30% 0px -60% 0px" }).observe(s);
+  });
+}
+(async () => {   // bootstrap: render first, observe second — no timers
+  await Promise.all([hero(), story(), kpis(), reconTable(), clusters(),
+                     evaluation(), stream()]);
+  initTabTracking();
 })();
-hero(); story(); kpis(); reconTable(); clusters(); evaluation(); stream();
 setInterval(stream, 5000);
